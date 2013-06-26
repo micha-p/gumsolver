@@ -23,6 +23,7 @@ map = function (func, t)
 end
 
 -- six of the seven important types need a predicate
+niltest      = function (x) return x == nil end
 numbertest   = function (x) return type(x) == "number" end
 stringtest   = function (x) return type(x) == "string" end
 tabletest    = function (x) return type(x) == "table" end
@@ -32,25 +33,27 @@ userdatatest = function (x) return type(x) == "userdata" end
 
 display = function (t, ...) -- recursive consumer
    local display1
-   display1 = function (t) 
-      if t == nil then io.write("nil")
-      elseif stringtest(t)  then io.write(string.format('%q',t))
-      elseif lambdatest(t)  then io.write(tostring(t))
-      elseif tabletest(t)   then
-         io.write ("{")
-         foreach (function (k, v) io.write (k, "=") display1(v) io.write(", ") end, t)
-         io.write ("\b\b}")  -- beautiful hack
-      elseif t == true  then io.write("not nil") -- PRAGMA
-      elseif t == false then io.write("nil")
-      else io.write(t)       
-      end
+   display1 = function (t) return
+      niltest(t) and io.write("nil")
+      or
+      stringtest(t)  and io.write(string.format('%q',t))
+      or
+      lambdatest(t)  and io.write(tostring(t))
+      or
+      tabletest(t)   and {io.write ("{");
+         		  foreach (function (k, v) io.write (k, "=") display1(v) io.write(", ") end, t);
+         		  io.write ("\b\b}")}  -- beautiful hack
+      or
+      t == true  and io.write("not nil") -- PRAGMA
+      or
+      t == false and io.write("nil")
+      or
+      io.write(t)       
    end
    display1 (t) 
-   if arg.n > 0 then 
-      io.write(" ") display(unpack(arg)) 
-   else
-      io.write("\n")
-   end
+   return arg.n > 0 and {io.write(" "); display(unpack(arg))} 
+          or
+          io.write("\n")
 end
 
 

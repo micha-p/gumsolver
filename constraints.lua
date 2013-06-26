@@ -1,4 +1,9 @@
---started using tables
+--[[
+
+As lua functions can hande different numbers of arguments easily, 
+the returned connector-functions do not need to return another function to handle any request.
+Instead they process the request directly.
+]]
 
 function cons(a, b)
   r = {}
@@ -34,169 +39,137 @@ end
 
 
 function adder (a1, a2, sum)  
-  local me={}
+  local me
   local function process_new_value ()
-    if has_value(a1) and has_value(a2) then 
-           set_value (sum, get_value(a1) + get_value(a2), me) 
-    elseif has_value(a1) and has_value(sum) then 
-           set_value (a2, get_value(sum) - get_value(a1), me) 
-    elseif has_value(a2) and has_value(sum) then 
-           set_value (a1, get_value(sum) - get_value(a2), me) 
+    if a1("value") and a2("value") then 
+           sum("set", me, a1("get") + a2("get")) 
+    elseif a1("value") and sum("value") then 
+           a2("set", me, sum("get") - a1("get")) 
+    elseif a2("value") and sum("value") then 
+           a1("set", me, sum("get") - a2("get")) 
     end
   end
   local function process_forget_value ()
-    forget_value(a1,me)
-    forget_value(a2,me)
-    forget_value(sum,me)
+    a1 ("forget", me)
+    a2 ("forget", me)
+    sum ("forget", me)
     process_new_value()
   end
-  me.call = function (request)
+  me = function (request)
              if request == "I have a value" then process_new_value()
              elseif request == "I lost my value" then process_forget_value()
              else print ("Unknown request - ADDER", request)
              end
             end
-  connect (a1, me)
-  connect (a2, me)
-  connect (sum, me)
+  a1 ("connect", me)
+  a2 ("connect", me)
+  sum ("connect", me)
 end
 
 function multiplier (m1, m2, product)  
-  local me={}
+  local me
   local function process_new_value ()
-    if has_value(m1) and has_value(m2) then 
-           set_value (product, get_value(m1) * get_value(m2), me) 
-    elseif has_value(m1) and has_value(product) then 
-           set_value (m2, get_value(product) / get_value(m1), me) 
-    elseif has_value(m2) and has_value(product) then 
-           set_value (m1, get_value(product) / get_value(m2), me) 
+    if m1("value") and m2("value") then 
+           product("set", me, m1("get") * m2("get")) 
+    elseif m1("value") and product("value") then 
+           m2("set", me, product("get") / m1("get")) 
+    elseif m2("value") and product("value") then 
+           m1("set", me, product("get") / m2("get")) 
     end
   end
   local function process_forget_value ()
-    forget_value(m1,me)
-    forget_value(m2,me)
-    forget_value(product,me)
+    m1 ("forget", me)
+    m2 ("forget", me)
+    product ("forget", me)
     process_new_value()
   end
-  me.call = function (request)
+  me = function (request)
              if request == "I have a value" then process_new_value()
              elseif request == "I lost my value" then process_forget_value()
              else print ("Unknown request - MULTIPLIER", request)
              end
             end
-  connect (m1, me)
-  connect (m2, me)
-  connect (product, me)
+  m1 ("connect", me)
+  m2 ("connect", me)
+  product ("connect", me)
 end
 
-
-
-function inform_about_value (constraint)  return constraint.call ("I have a value") end
-function inform_about_no_value (constraint) return constraint.call ("I lost my value") end
+function inform_about_value (constraint)  return constraint ("I have a value") end
+function inform_about_no_value (constraint) return constraint ("I lost my value") end
 
 function constant (value, connector) 
-  local me = {}
-  me.call = function (request)
+  local me
+  me = function (request)
               print ("Unknown request - CONSTANT" , request)
             end
-  connect (connector, me)
-  set_value (connector, value, me)
-  return me
+  connector ("connect", me)
+  connector ("set", me, value)
 end
 
 function probe (name, connector)
-  local me={}
+  local me
   local print_probe = function (value)
     print ("Probe: ", name, " = ", value)
   end
-  local process_new_value = function ()
-    print_probe (get_value (connector))
-  end
-  local process_forget_value = function ()
-    print_probe ("?")
-  end
-  me.call = function (request)
-              if request == "I have a value" then process_new_value()
-              elseif request == "I lost my value" then process_forget_value()
+  me = function (request)
+              if request == "I have a value" then print_probe (connector ("get"))
+              elseif request == "I lost my value" then print_probe ("?")
               else print ("Unknown request - PROBE", request)
               end
             end
-  connect (connector, me)
+  connector ("connect", me)
 end
 
 
 function make_connector()
-  local me={}
-  me.value = nil
-  me.informant = nil
-  me.constraints = nil
+  local me 
+  local value = nil
+  local informant = nil
+  local constraints = nil
 
-  local set_my_value = function (newval, setter)
-    if (not has_value(me)) then
-      me.value = newval
-      me.informant = setter
-      for_each_except (setter, inform_about_value, me.constraints)
-    elseif not (get_value(me) == newval) then print ("Contradiction" , value , newval)
+  local set_my_value = function (setter, newval)
+    if (not informant) then   -- informant = me("value")
+      value = newval
+      informant = setter
+      for_each_except (setter, inform_about_value, constraints)
+    elseif value ~= newval then print ("Contradiction" , value , newval) -- value = me("get")
     end
   end
 
   local forget_my_value = function (retractor)
-    if retractor == me.informant then
-       me.informant = nil
-       for_each_except (retractor, inform_about_no_value, me.constraints)
+    if retractor == informant then
+       informant = nil
+       for_each_except (retractor, inform_about_no_value, constraints)
     end
   end
   
-  me.connect = function (new_constraint)
-    if not member (new_constraint , me.constraints) then me.constraints = cons (new_constraint , me.constraints) end
-    if has_value(me) then inform_about_value (new_constraint) end
+  local connect = function (new_constraint)
+    if not member (new_constraint , constraints) then constraints = cons (new_constraint , constraints) end
+    if me("value") then inform_about_value (new_constraint) end
   end
 
-  me.call = function (request)
-              if request == "has value?" then if me.informant then return not nil else return nil end
-              elseif request == "value" then return me.value 
-              elseif request == "set value" then return set_my_value
-              elseif request == "forget" then return forget_my_value
-              elseif request == "connect" then return me.connect
+  me = function (request, actor, newval)
+              if request == "value" then if informant then return not nil else return nil end
+              elseif request == "get" then return value 
+              elseif request == "set" then set_my_value (actor, newval)
+              elseif request == "forget" then forget_my_value (actor)
+              elseif request == "connect" then connect (actor)
               else print ("Unknown operation - CONNECTOR", request)
               end
             end
-  return me
+   return me
 end
 
-
-function has_value(connector) 
-  return connector.call ("has value?")
-end 
-
-function get_value(connector)
-  return connector.call ("value")
-end
-
-function set_value (connector, new_value, informant)
-  r= connector.call("set value")
-  return r(new_value, informant)
-end
-
-function forget_value (connector, retractor)
-  r=connector.call ("forget")
-  return r(retractor)
-end
-
-function connect (connector, new_constraint)
-  r=connector.call ("connect")
-  return r(new_constraint)
-end
 
 ---------------------------------------------------------------
 
 
 function celsius_fahrenheit_converter (c, f)
-  u = make_connector()
-  v = make_connector()
-  w = make_connector()
-  x = make_connector()
-  y = make_connector()
+  local u = make_connector()
+  local v = make_connector()
+  local w = make_connector()
+  local x = make_connector()
+  local y = make_connector()
   multiplier (c, w, u)
   multiplier (v, x, u)
   adder (v, y, f)
@@ -214,9 +187,9 @@ celsius_fahrenheit_converter(C, F)
 probe ("Celsius temp", C)
 probe ("Fahrenheit temp", F)
 
-set_value ( C, 25, "user")
-set_value ( F, 212, "user")
-forget_value  (C, "user")
-set_value  (F, 212, "user")
+C ("set", "user", 25)
+F ("set", "user", 212)
+C ("forget", "user")
+F ("set", "user", 212)
 
 
