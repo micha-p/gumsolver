@@ -1,14 +1,18 @@
 dofile "display.lua"
 
+-- v=value e=error u=unit
+
 function createvalue (i)
    local ret={}
-   if i.name ~= NIL then ret.name = i.name end
-   if i.mean ~= NIL then ret.mean = i.mean end
-   if i.unit ~= NIL then ret.unit = string.gsub (i.unit, "µ", "\\u") end
-   if i.se   ~= NIL then ret.se = i.se else ret.se = 0 end
+   if i.v ~= NIL then ret.v = i.v else error ( "No value given!") end
+   if i.e ~= NIL then ret.e = i.e else ret.e = 0 end
+   if i.u ~= NIL then ret.u = string.gsub (i.u, "µ", "\\u") else ret.u="" end
+   if i.name ~= NIL then ret.name = i.name else ret.name = "" end
    if i.info ~= NIL then ret.info = i.info end
+   ret.e2 = ret.e^2 -- redundant information for better efficiency
+
    ret.string = function () 
-                   return ret.name .. " [" .. ret.unit .. "] = " .. ret.mean .. " +- " .. ret.se 
+                   return ret.name .. " [" .. ret.u .. "] = " .. ret.v .. " +- " .. ret.e 
                 end
    ret.ascii  = function () 
                    return ( string.gsub (ret.string(), "\\u", "u") )
@@ -19,31 +23,77 @@ function createvalue (i)
                              string.gsub(
                                 string.gsub(
                                    string.gsub(
-                                      string.gsub (ret.unit, "\\u", "µ"),
+                                      string.gsub (ret.u, "\\u", "µ"),
                                       "3", "³"), 
                                    "2","²"),
                                 "1","¹"),
-                             "-", "¯") .. "] = " .. ret.mean .. " ± " .. ret.se)
+                             "-", "¯") .. "] = " .. ret.v .. " ± " .. ret.e)
                 end
    return ret
 end
 
+function vnew (value, err, unit) return createvalue{v=value; e=err; u=unit} end
 
-leafarea= createvalue {name="area", mean=0.01,unit="m2",se=0.001, info="projected leaf area"}
+function vcheck (a , b) return a.name == b.name and a.u == b.u or error "name or unit mismatch" end
+ 
+function vinv (a)
+   return vnew (- a.v, a.e, a.u)
+end 
 
-print(leafarea)
-print(leafarea.mean)
-print(leafarea.se)
-print(leafarea.unit)
+function vadd (a, b)
+   vcheck (a,b)
+   return vnew (a.v + b.v , math.sqrt(a.e2 + b.e2), a.u)
+end 
 
-display(leafarea)
-display(leafarea.ascii())
+function vsub (a, b)
+   vcheck (a,b)
+   return vnew (a.v - b.v , math.sqrt(a.e2 + b.e2), a.u)
+end 
 
-display(light)
+function vmul (a, b)
+   local ar2 = a.e2/a.v^2
+   local br2 = b.e2/b.v^2
+   local c = a.v * b.v     
+   return vnew (c , math.abs(c) * math.sqrt(ar2 + br2), a.u .. " " .. b.u)
+end 
 
-light= createvalue {name="ppfd", mean=1000, unit="µmol m-2 s-1",se="10", info="phpt..."}
+function vdiv (a, b)
+   local ar2 = a.e2/(a.v^2)
+   local br2 = b.e2/(b.v^2)
+   local c = a.v / b.v     
+   return vnew (c , math.abs(c) * math.sqrt(ar2 + br2), a.u .. " / " .. b.u)
+end 
 
-print(light.ascii())
-print(light.string())
-print(light.pretty())
-display(leafarea.ascii())
+
+a = vnew ( 10, 1, "m2")
+b = vnew ( 12, 1, "m2")
+c = vadd ( a , b)
+
+print()
+print(a.string())
+print(b.string())
+print(c.string())
+
+a = vnew ( 10, 1, "m")
+b = vnew ( 10, 1, "m")
+c = vmul ( a , b)
+
+print()
+print(a.string())
+print(b.string())
+print(c.string())
+
+
+a = vnew ( 30, 3, "km")
+b = vnew ( 10, 1, "h")
+c = vdiv ( a , b)
+
+print()
+print(a.string())
+print(b.string())
+print(c.string())
+
+
+
+
+
