@@ -20,10 +20,8 @@ function for_each_except (exception, procedure, list)
   loop (list)
 end
 
-  
 -------------------------------------------------------------------------
 -------------------------------------------------------------------------
-
 
 value = 1
 get = 2
@@ -33,59 +31,58 @@ connect = 5
 new = 10
 lost = 11
 
-
-function adder (a1, a2, sum)  
+function actor (process_new_value, process_forget_value)  
   local me
-  local function process_new_value ()
-    if     a1(value) and a2 (value) then sum(set, me, a1 (get) + a2(get)) 
-    elseif a1(value) and sum(value) then a2 (set, me, sum(get) - a1(get)) 
-    elseif a2(value) and sum(value) then a1 (set, me, sum(get) - a2(get)) 
-    end
-  end
-  local function process_forget_value ()
-    a1 (forget, me)
-    a2 (forget, me)
-    sum (forget, me)
-    process_new_value()
-  end
   me = function (request)
              if request == new then process_new_value()
              elseif request == lost then process_forget_value()
              end
            end
-  a1  (connect, me)
-  a2  (connect, me)
-  sum (connect, me)
+  return me
 end
 
-function multiplier (m1, m2, product)  
+function constraint (a, b, c, forward , back)  
   local me
   local function process_new_value ()
-    if     m1(value) and m2     (value) then product(set, me, m1     (get) * m2(get)) 
-    elseif m1(value) and product(value) then m2     (set, me, product(get) / m1(get)) 
-    elseif m2(value) and product(value) then m1     (set, me, product(get) / m2(get)) 
+    if     a(value) and b(value) then c(set, me, forward (a(get), b(get))) 
+    elseif a(value) and c(value) then b(set, me, back    (c(get), a(get))) 
+    elseif b(value) and c(value) then a(set, me, back    (c(get), b(get))) 
     end
   end
   local function process_forget_value ()
-    m1      (forget, me)
-    m2      (forget, me)
-    product (forget, me)
+    a(forget, me)
+    b(forget, me)
+    c(forget, me)
     process_new_value()
   end
-  me = function (request)
-             if request == new then process_new_value()
-             elseif request == lost then process_forget_value()
-             end
-            end
-  m1      (connect, me)
-  m2      (connect, me)
-  product (connect, me)
+  me = actor (process_new_value, process_forget_value) 
+  a(connect, me)
+  b(connect, me)
+  c(connect, me)
 end
+
+function adder     (a1, a2, sum)  constraint(a1,a2,sum , function(a,b) return a+b end, function(a,b) return a-b end) end
+function subtractor(a1, a2, diff) constraint(a1,a2,diff, function(a,b) return a-b end, function(a,b) return a+b end) end
+function multiplier(m1, m2, prod) constraint(m1,m2,prod, function(a,b) return a*b end, function(a,b) return a/b end) end
+function divider   (a1, a2, sum)  constraint(a1,a2,sum , function(a,b) return a/b end, function(a,b) return a*b end) end
+
+--[[ syntactic sugar  
+
+arrow is also used in OCaml, maple, f#, erlang, haskell, oft aber auch für typenübergabe
+-> ist ein binärer operator in der Reihenfolge direkt über =
+
+adder      = (a1, a2, sum)  -> constraint(a1,a2,sum , (a,b) -> return a+b, (a,b) -> return a-b)
+subtractor = (a1, a2, diff) -> constraint(a1,a2,diff, (a,b) -> return a-b, (a,b) -> return a+b)
+multiplier = (m1, m2, prod) -> constraint(m1,m2,prod, (a,b) -> return a*b, (a,b) -> return a/b)
+divider    = (a1, a2, sum)  -> constraint(a1,a2,sum , (a,b) -> return a/b, (a,b) -> return a*b)
+
+]]
+
 
 
 function constant (value, connector) 
   local me
-  me = function (request) end
+  me = actor () 
   connector (connect, me)
   connector (set, me, value)
 end
@@ -95,11 +92,7 @@ function probe (name, connector)
   local print_probe = function (value)
     print ("Probe: ", name, " = ", value)
   end
-  me = function (request)
-              if request == new then print_probe (connector (get))
-              elseif request == lost then print_probe ("?")
-              end
-            end
+  me = actor (function () print_probe (connector (get)) end, function () print_probe ("?") end)
   connector (connect, me)
 end
 
@@ -159,17 +152,43 @@ function celsius_fahrenheit_converter (c, f)
   constant (32, y)
 end
 
+function celsius_reaumur_converter (c, r)
+  local u = make_connector()
+  local f80 = make_connector()
+  local f100 = make_connector()
+  divider (c, f100, u)
+  divider (r, f80,  u)
+  constant (80, f80)
+  constant (100, f100)
+end
+
+function celsius_kelvin_converter (c, k)
+  local abs = make_connector()
+  subtractor (k, abs, c)
+  constant (273.15, abs)
+end
+
+R = make_connector()
 C = make_connector()
 F = make_connector()
+K = make_connector()
 
 celsius_fahrenheit_converter(C, F)
+celsius_reaumur_converter(C, R)
+celsius_kelvin_converter(C, K)
 
-probe ("Celsius temp", C)
-probe ("Fahrenheit temp", F)
+probe ("Celsius    ", C)
+probe ("Fahrenheit ", F)
+probe ("Reaumur    ", R)
+probe ("Kelvin     ", K)
 
 C (set, "user", 25)
 F (set, "user", 212)
 C (forget, "user")
 F (set, "user", 212)
+F (forget, "user")
+R (set, "user", 80)
+R (forget, "user", 80)
+K (set, "user", 0)
 
 
