@@ -1,5 +1,4 @@
-
--- literally, returning functions
+--started using tables
 
 function cons(a, b)
   r = {}
@@ -35,7 +34,7 @@ end
 
 
 function adder (a1, a2, sum)  
-  local me
+  local me={}
   local function process_new_value ()
     if has_value(a1) and has_value(a2) then 
            set_value (sum, get_value(a1) + get_value(a2), me) 
@@ -51,7 +50,7 @@ function adder (a1, a2, sum)
     forget_value(sum,me)
     process_new_value()
   end
-  me = function (request)
+  me.call = function (request)
              if request == "I have a value" then process_new_value()
              elseif request == "I lost my value" then process_forget_value()
              else print ("Unknown request - ADDER", request)
@@ -63,7 +62,7 @@ function adder (a1, a2, sum)
 end
 
 function multiplier (m1, m2, product)  
-  local me
+  local me={}
   local function process_new_value ()
     if has_value(m1) and has_value(m2) then 
            set_value (product, get_value(m1) * get_value(m2), me) 
@@ -79,7 +78,7 @@ function multiplier (m1, m2, product)
     forget_value(product,me)
     process_new_value()
   end
-  me = function (request)
+  me.call = function (request)
              if request == "I have a value" then process_new_value()
              elseif request == "I lost my value" then process_forget_value()
              else print ("Unknown request - MULTIPLIER", request)
@@ -90,20 +89,23 @@ function multiplier (m1, m2, product)
   connect (product, me)
 end
 
-function inform_about_value (constraint)  return constraint ("I have a value") end
-function inform_about_no_value (constraint) return constraint ("I lost my value") end
+
+
+function inform_about_value (constraint)  return constraint.call ("I have a value") end
+function inform_about_no_value (constraint) return constraint.call ("I lost my value") end
 
 function constant (value, connector) 
-  local me
-  me = function (request)
+  local me = {}
+  me.call = function (request)
               print ("Unknown request - CONSTANT" , request)
             end
   connect (connector, me)
   set_value (connector, value, me)
+  return me
 end
 
 function probe (name, connector)
-  local me
+  local me={}
   local print_probe = function (value)
     print ("Probe: ", name, " = ", value)
   end
@@ -113,7 +115,7 @@ function probe (name, connector)
   local process_forget_value = function ()
     print_probe ("?")
   end
-  me = function (request)
+  me.call = function (request)
               if request == "I have a value" then process_new_value()
               elseif request == "I lost my value" then process_forget_value()
               else print ("Unknown request - PROBE", request)
@@ -124,65 +126,65 @@ end
 
 
 function make_connector()
-  local me 
-  local value = nil
-  local informant = nil
-  local constraints = nil
+  local me={}
+  me.value = nil
+  me.informant = nil
+  me.constraints = nil
 
   local set_my_value = function (newval, setter)
     if (not has_value(me)) then
-      value = newval
-      informant = setter
-      for_each_except (setter, inform_about_value, constraints)
+      me.value = newval
+      me.informant = setter
+      for_each_except (setter, inform_about_value, me.constraints)
     elseif not (get_value(me) == newval) then print ("Contradiction" , value , newval)
     end
   end
 
   local forget_my_value = function (retractor)
-    if retractor == informant then
-       informant = nil
-       for_each_except (retractor, inform_about_no_value, constraints)
+    if retractor == me.informant then
+       me.informant = nil
+       for_each_except (retractor, inform_about_no_value, me.constraints)
     end
   end
   
-  local connect = function (new_constraint)
-    if not member (new_constraint , constraints) then constraints = cons (new_constraint , constraints) end
+  me.connect = function (new_constraint)
+    if not member (new_constraint , me.constraints) then me.constraints = cons (new_constraint , me.constraints) end
     if has_value(me) then inform_about_value (new_constraint) end
   end
 
-  me = function (request)
-              if request == "has value?" then if informant then return not nil else return nil end
-              elseif request == "value" then return value 
+  me.call = function (request)
+              if request == "has value?" then if me.informant then return not nil else return nil end
+              elseif request == "value" then return me.value 
               elseif request == "set value" then return set_my_value
               elseif request == "forget" then return forget_my_value
-              elseif request == "connect" then return connect
+              elseif request == "connect" then return me.connect
               else print ("Unknown operation - CONNECTOR", request)
               end
             end
-   return me
+  return me
 end
 
 
 function has_value(connector) 
-  return connector ("has value?")
+  return connector.call ("has value?")
 end 
 
 function get_value(connector)
-  return connector ("value")
+  return connector.call ("value")
 end
 
 function set_value (connector, new_value, informant)
-  r= connector ("set value")
+  r= connector.call("set value")
   return r(new_value, informant)
 end
 
 function forget_value (connector, retractor)
-  r=connector ("forget")
+  r=connector.call ("forget")
   return r(retractor)
 end
 
 function connect (connector, new_constraint)
-  r=connector ("connect")
+  r=connector.call ("connect")
   return r(new_constraint)
 end
 
@@ -190,11 +192,11 @@ end
 
 
 function celsius_fahrenheit_converter (c, f)
-  local u = make_connector()
-  local v = make_connector()
-  local w = make_connector()
-  local x = make_connector()
-  local y = make_connector()
+  u = make_connector()
+  v = make_connector()
+  w = make_connector()
+  x = make_connector()
+  y = make_connector()
   multiplier (c, w, u)
   multiplier (v, x, u)
   adder (v, y, f)
@@ -202,6 +204,7 @@ function celsius_fahrenheit_converter (c, f)
   constant (5, x)
   constant (32, y)
 end
+
 
 C = make_connector()
 F = make_connector()
