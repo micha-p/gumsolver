@@ -41,8 +41,6 @@ function adder     (a1, a2, sum)  constraint(a1,a2,sum , function(a,b) return a+
 function subtractor(a1, a2, diff) constraint(a1,a2,diff, function(a,b) return a-b end, function(a,b) return a+b end) end
 function multiplier(m1, m2, prod) constraint(m1,m2,prod, function(a,b) return a*b end, function(a,b) return a/b end) end
 function divider   (a1, a2, sum)  constraint(a1,a2,sum , function(a,b) return a/b end, function(a,b) return a*b end) end
-
-
 function constant (value, connector) 
   local me = {}
   me = make_actor () 
@@ -101,56 +99,31 @@ end
 
 ---------------------------------------------------------------
 
-function celsius_fahrenheit_converter (c, f)
-  local u = make_connector()
-  local v = make_connector()
-  local w = make_connector()
-  local x = make_connector()
-  local y = make_connector()
-  multiplier (c, w, u)
-  multiplier (v, x, u)
-  adder (v, y, f)
-  constant (9, w)
-  constant (5, x)
-  constant (32, y)
-end
 
-function celsius_reaumur_converter (c, r)
-  local u = make_connector()
-  local f80 = make_connector()
-  local f100 = make_connector()
-  divider (c, f100, u)
-  divider (r, f80,  u)
-  constant (80, f80)
-  constant (100, f100)
-end
+function cadd (x,y) local z = make_connector(); adder      (x,y,z) return z end
+function csub (x,y) local z = make_connector(); subtractor (x,y,z) return z end
+function cmul (x,y) local z = make_connector(); multiplier (x,y,z) return z end
+function cdiv (x,y) local z = make_connector(); divider    (x,y,z) return z end
+function cv   (x  ) local z = make_connector(); constant   (x,  z) return z end
 
-function celsius_kelvin_converter (c, k)
-  local abs = make_connector()
-  subtractor (k, abs, c)
-  constant (273.15, abs)
-end
-
-R = make_connector()
 C = make_connector()
-F = make_connector()
-K = make_connector()
-
-celsius_fahrenheit_converter(C, F)
-celsius_reaumur_converter(C, R)
-celsius_kelvin_converter(C, K)
+F = cadd (cmul (cdiv(cv(9),cv(5)) , C) , cv(32) )
+K = csub (C, cv (-273.15))
+R = cmul (cv(80), cdiv (C, cv(100)))
 
 probe ("Celsius    ", C)
 probe ("Fahrenheit ", F)
-probe ("Reaumur    ", R)
 probe ("Kelvin     ", K)
+probe ("Reaumur    ", R)
 
 C.set("user", 25)
 F.set("user", 212)
 C.forget("user")
 F.set("user", 212)
 F.forget("user")
+K.set("user",0)
+K.forget("user")
 R.set("user", 80)
 R.forget("user")
-K.set("user",0)
+R.set("user", 0)
 
