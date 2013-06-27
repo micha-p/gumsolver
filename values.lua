@@ -1,99 +1,83 @@
 dofile "display.lua"
 
--- v=value e=error u=unit
 
-function createvalue (i)
-   local ret={}
-   if i.v ~= NIL then ret.v = i.v else error ( "No value given!") end
-   if i.e ~= NIL then ret.e = i.e else ret.e = 0 end
-   if i.u ~= NIL then ret.u = string.gsub (i.u, "µ", "\\u") else ret.u="" end
-   if i.name ~= NIL then ret.name = i.name else ret.name = "" end
-   if i.info ~= NIL then ret.info = i.info end
-   ret.e2 = ret.e^2 -- redundant information for better efficiency
+function vfast (v, D2, d2)
+   local r={}
+   r.v  = v
+   r.D2 = D2 or d2 and ( d2^0.5 * v )^2 or 0
+   r.d2 = d2 or D2 and ( D2^0.5 / v )^2 or 0
 
-   ret.string = function () 
-                   return ret.name .. " [" .. ret.u .. "] = " .. ret.v .. " +- " .. ret.e 
-                end
-   ret.ascii  = function () 
-                   return ( string.gsub (ret.string(), "\\u", "u") )
-                end
-   ret.pretty = function () 
-                  return (ret.name .. " [" .. 
-                          string.gsub(
-                             string.gsub(
-                                string.gsub(
-                                   string.gsub(
-                                      string.gsub (ret.u, "\\u", "µ"),
-                                      "3", "³"), 
-                                   "2","²"),
-                                "1","¹"),
-                             "-", "¯") .. "] = " .. ret.v .. " ± " .. ret.e)
-                end
-   return ret
+   r.rel = function () return r.v .. " ± " .. 100 * math.sqrt(r.d2) .. "%" end
+   r.abs = function () return r.v .. " ± " .. math.sqrt(r.D2) end
+
+   return r
 end
 
-function vnew (value, err, unit) return createvalue{v=value; e=err; u=unit} end
-
-function vcheck (a , b) return a.name == b.name and a.u == b.u or error "name or unit mismatch" end
- 
-function vinv (a)
-   return vnew (- a.v, a.e, a.u)
-end 
-
-function vadd (a, b)
-   vcheck (a,b)
-   return vnew (a.v + b.v , math.sqrt(a.e2 + b.e2), a.u)
-end 
-
-function vsub (a, b)
-   vcheck (a,b)
-   return vnew (a.v - b.v , math.sqrt(a.e2 + b.e2), a.u)
-end 
-
-function vmul (a, b)
-   local ar2 = a.e2/a.v^2
-   local br2 = b.e2/b.v^2
-   local c = a.v * b.v     
-   return vnew (c , math.abs(c) * math.sqrt(ar2 + br2), a.u .. " " .. b.u)
-end 
-
-function vdiv (a, b)
-   local ar2 = a.e2/(a.v^2)
-   local br2 = b.e2/(b.v^2)
-   local c = a.v / b.v     
-   return vnew (c , math.abs(c) * math.sqrt(ar2 + br2), a.u .. " / " .. b.u)
-end 
+function vnew (v, D, d) return vfast( v , D and D^2, d and d^2) end
+function vinv (a)       return vfast (- a.v, a.D2, a.d2) end 
+function vadd (a, b)    return vfast (a.v + b.v , a.D2 + b.D2, nil) end 
+function vsub (a, b)    return vfast (a.v - b.v , a.D2 + b.D2, nil) end
+function vmul (a, b)    return vfast (a.v * b.v , nil, a.d2 + b.d2) end
+function vdiv (a, b)    return vfast (a.v / b.v , nil, a.d2 + b.d2) end
 
 
-a = vnew ( 10, 1, "m2")
-b = vnew ( 12, 1, "m2")
+--[[
+
+a = vnew ( 100000, 1)
+b = vnew ( 12, 1)
 c = vadd ( a , b)
 
 print()
-print(a.string())
-print(b.string())
-print(c.string())
+print(a.abs(), b.abs(), c.abs())
+print(a.rel(), b.rel(), c.rel())
 
-a = vnew ( 10, 1, "m")
-b = vnew ( 10, 1, "m")
+a = vnew ( 10, 1)
+b = vnew ( 10, 1)
 c = vmul ( a , b)
 
 print()
-print(a.string())
-print(b.string())
-print(c.string())
+print(a.abs(), b.abs(), c.abs())
+print(a.rel(), b.rel(), c.rel())
 
-
-a = vnew ( 30, 3, "km")
-b = vnew ( 10, 1, "h")
+a = vnew ( 30, 3)
+b = vnew ( 10, 1)
 c = vdiv ( a , b)
 
 print()
-print(a.string())
-print(b.string())
-print(c.string())
+print(a.abs(), b.abs(), c.abs())
+print(a.rel(), b.rel(), c.rel())
 
+a = vnew ( 10, 2)
+b = vnew ( 10, nil, 0.2)
+c = vnew ( 10, 2)
+d = vnew ( 10, 2)
+r = vadd (vadd ( a , b) , vadd ( c , d)) -- relative error gets smaller!!
 
+print()
+print(a.abs())
+print(a.rel())
+print(r.abs())
+print(r.rel())
+display(a.D2)
+display(r.D2)
 
+a = vnew ( 10, 2)
+b = vnew ( 10, nil, 0.2)
+c = vnew ( 10, 2)
+d = vnew ( 10, 2)
+r = vmul (vmul ( a , b) , vmul ( c , d))
 
+print()
+print(a.abs())
+print(a.rel())
+print(r.abs())
+print(r.rel())
+display(a.D2)
+display(r.d2) 
+
+print ("\n \n exact value")
+n = vnew ( 10)
+print (n.abs())
+
+]]
 

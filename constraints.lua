@@ -9,7 +9,6 @@ end
 -------------------------------------------------------------------------
 -------------------------------------------------------------------------
 
-
 function make_actor (process_new_value, process_forget_value)  
   local me = {}
   me.new  = function () process_new_value() end
@@ -42,9 +41,9 @@ end
 function probe (name, connector)
   local me = {}
   local printprobe = function (value)
-    print (name, " = ", genout (value))
+    print (name, " = ", value)
   end
-  me = make_actor (function () printprobe (connector.get()) end, function () printprobe ("?") end)
+  me = make_actor (function () printprobe (genout (connector.get())) end, function () printprobe ("?") end)
   connector.connect(me)
   return me
 end
@@ -61,7 +60,7 @@ function make_connector()
       value = newval
       informant = setter
       table.foreach (constraints, function (k, v) if v ~= setter then v.new() end end)
-    elseif value ~= newval then print ("Contradiction" , value , newval)
+    elseif not geneqv (value, newval) then print ("Contradiction" , genout (value) , genout (newval))
     end
   end
 
@@ -95,11 +94,15 @@ genmul = nil
 gendiv = nil
 genset = nil
 genout = function (a) return a end
+geneqv = function (a,b) return a == b end
 
 function init_print (func)
   genout = func
 end
 
+function init_equal (func)
+  geneqv = func
+end
 
 function init_algebra (add, sub, mul, div)
   genadd = function (a1, a2, sum)  constraint(a1,a2,sum , add, sub) end
@@ -122,7 +125,7 @@ function cdiv (x,y) local z = make_connector(); gendiv (x,y,z) return z end
 function cv   (x  ) local z = make_connector(); genset (x,  z) return z end
 
 
-
+--[[
 
 init_algebra (function(a,b) return a+b end, 
               function(a,b) return a-b end, 
@@ -151,3 +154,4 @@ R.forget("user")
 R.set("user", 0)
 
 
+]]
