@@ -1,5 +1,6 @@
 dofile ("constraints.lua")
 dofile ("values.lua")
+dofile ("csv.lua")
 
 
 init_algebra (vadd,vsub,vmul,vdiv)
@@ -52,42 +53,8 @@ if s then
   end
 end
 
---run (C, 25 )
-run (F, "212" )
-run (F)
 
-print ("=== Kelvin ===")
-run (K, "0" )
-run (K)
+--[[
+r=csv_read("table.csv")
 
-print ("=== Reaumur ===")
-run (R, "40 ± 2 " )
-run (R)
-run (R, "40.001 ± 2.01" )
-run (R, "40.001 ± 2.01  " )
-run (R)
-run (R, "40.001 ± 2.02  " )
-run (R, "40.001 ± 2.03  " )
-run (R)
-run (R, "40.001 ± 2.01%" )
-run (R)
-run (R, "-40 ± 0.1 " )
-run (R)
-run (R, ".40 ± -.0%" )
-run (R)
-run (R, "0 ± 3.0122" )
-run (R)
-print ("=== Celsius ===")
-run (C, "100 +- 1" )
-run (C)
-run (C, "100 +- 10%" )
-run (C)
-run (C, "100 +- 2.5%" )
-run (C)
-run (C, "100 +- 3.3" )
-run (C)
-
-print("=== strictly, only the Kelvin-scale  can use errors ===")
-
-
-
+display (r)]]
