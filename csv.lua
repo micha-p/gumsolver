@@ -24,7 +24,7 @@ function csv_read(filename,separator)
     end
    
    file:close()
-   return rtable,rheader
+   return rtable,rheader,header
 end
 
 function try_tonumber (s)
@@ -59,6 +59,7 @@ function csv_read_line (str, sep)
 return t
 end
 
---r, h =csv_read("tableformula.txt","\t")
---for k,v in ipairs(h) do print(k,v) end
+--[[records, header,short =csv_read("tableformula.txt","\t")
+for k,v in ipairs(header) do print(k,v) end
+for k,v in ipairs(short) do print(k,v) end]]
 
