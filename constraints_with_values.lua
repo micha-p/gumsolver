@@ -82,6 +82,11 @@ end
 
 r,h=csv_read("tableformula.txt","\t")
 
-for col, colname in ipairs(h) do process_column(colname) end 
-for name,connector in pairs(c) do print("Field:",name); probe(name,connector) end
+for col, colname in ipairs(h) do print("Field:",colname); process_column(colname) end 
+for name,connector in pairs(c) do probe(name,connector) end
 for line, record in ipairs(r) do process_record (c, record) ; print ("===============") end
+
+display (r)
+
+
+

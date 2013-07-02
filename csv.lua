@@ -1,9 +1,15 @@
+--header contains formula, records do not
+
+
 function csv_read(filename,separator)
    local sep = separator or ","
    local file=assert(io.open(filename,"r"))
    local line=assert(file:read())
-   local header=csv_read_line(line, sep)
+   local rheader=csv_read_line(line, sep)
    local rtable={}
+   local header={}
+
+   for k,v in ipairs(rheader) do header[k]= string.find(v,"=") and string.match(v,"%s*(.+)%s*=") or v end
 
    for line in function() return file:read() end do
       local fields={}
@@ -18,7 +24,7 @@ function csv_read(filename,separator)
     end
    
    file:close()
-   return rtable,header
+   return rtable,rheader
 end
 
 function try_tonumber (s)
@@ -53,7 +59,6 @@ function csv_read_line (str, sep)
 return t
 end
 
---[[
-r=csv_read("table.csv")
+--r, h =csv_read("tableformula.txt","\t")
+--for k,v in ipairs(h) do print(k,v) end
 
-display (r)]]
