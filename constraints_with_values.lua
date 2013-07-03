@@ -8,17 +8,15 @@ init_print   (function (v)   return v.abs () end)
 init_equal   (function (a,b) return a.v == b.v and a.D2 == b.D2 end) 
 
 
-c={}  -- global connector table
-
-function run (connectortable, c, val , abs , rel) 
-   if c then
+function run (connectortable, connector, val , abs , rel) 
+   if connector then
       if val then 
-         c.set (001, vnew (val, abs, rel))
+         connector.set (001, tabletest (val) and val or vnew (val, abs, rel))
       else
-         c.forget (001)
+         connector.forget (001)
       end
    else
-      for name,connector in pairs(connectortable) do connector.forget (001) end
+      for name,c in pairs(connectortable) do c.forget (001) end
    end
 end
 
@@ -30,7 +28,7 @@ function process_record (c, rec)
 end
 
 
-function process_formula(formula)
+function process_formula(c, formula)
    local function apply (op1, infix, op2)
    return infix=="+" and cadd (op1, op2)
           or
@@ -47,6 +45,8 @@ function process_formula(formula)
           numbertest(node) and cv(vnew(node))
           or
           tabletest(node) and apply (eval(node[1]),node[2],eval(node[3])) 
+          or
+          error ("Can't resolve expression: "..node)
    end 
 
    name=formula:match("%s*(.+)%s*=")
@@ -55,61 +55,38 @@ function process_formula(formula)
 return not nil
 end
     
-function process_column(colname)
+function process_column(c, colname)
    local function new()
       c[colname]=make_connector()
       return nil
    end
 return colname:match("%+%-$") 
-	or 
-   	colname:match("±$") 
-   	or 
-   	colname:match ("%%$")
-   	or 
-   	colname:match ("=") and process_formula(colname)
-   	or
-   	new()
+       or 
+       colname:match("±$") 
+       or 
+       colname:match ("%%$")
+       or 
+       colname:match ("=") and process_formula(c, colname)
+       or
+       new()
 end
 
-function print_result (colnames,connectors) 
+function print_result (c, colnames) 
    local con,value,check
    local r={}
-   for k,v in ipairs(colnames) do  -- TODO improve with and/or
-      con=connectors[v]
-      if con then
-         if con.value() then 
-            value=con.get(); r[k]=value["v"]
-         else
-            r[k] ="." 
-         end
-      else
-         gen=connectors[v:match("(.*)%+%-$") or v:match("(.*)±$") or v:match("(.*)%%$")]
-         if gen then
-            if gen.value() then 
-               value=gen.get(); r[k]=v:find("%%$") and math.sqrt(value["d2"])*100 or math.sqrt(value["D2"])
-            else
-               r[k] ="."
-            end 
-         end
-      end
+   for k,v in ipairs(colnames) do 
+      con=c[v]
+      gen=c[v:match("(.*)%+%-$") or v:match("(.*)±$") or v:match("(.*)%%$")]
+      r[k] = con and con.value() and con.get()["v"]
+             or 
+             gen and gen.value() and v:find("%%$") and math.sqrt(gen.get()["d2"])*100 
+             or 
+             gen and gen.value() and math.sqrt(gen.get()["D2"])
+             or
+             "."
    end
 return r
 end
-
-records,header,colnames=csv_read("tableformula.txt","\t")
-
-for col, colname in ipairs(header) do process_column(colname) end 
--- for name,connector in pairs(c) do probe(name,connector) end
-
-print(unpack(header))
-for line, record in ipairs(records) do 
-   process_record (c, record)
-   r= print_result(colnames,c)
-   print(unpack(r))
-end
-
-
-
 
 
 

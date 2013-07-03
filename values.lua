@@ -1,5 +1,4 @@
-dofile "display.lua"
-
+-- estimate, square of absolute uncertainty, square of relative uncertainty
 
 function vfast (v, D2, d2)
    local r={}
@@ -21,63 +20,45 @@ function vmul (a, b)    return vfast (a.v * b.v , nil, a.d2 + b.d2) end
 function vdiv (a, b)    return vfast (a.v / b.v , nil, a.d2 + b.d2) end
 
 
+function vreader (str)
+ local sp="%s*"
+ local num="-?%d*%.?%d*"
+ local err="[%+%-%±]*"
+ local rel="%%?"
+ local v,s,e,r
+ 
+ function make (val,err,rflag)
+    return vnew (val, (not rflag) and err or nil, rflag and err and err/100 or nil)
+ end
+
+ v= string.match(str,sp.."("..num..")"..sp..err..sp..num..sp..rel)
+ s= string.match(str,sp..num..sp.."("..err..")"..sp..num..sp..rel)
+ e= string.match(str,sp..num..sp..err..sp.."("..num..")"..sp..rel)
+ r= string.match(str,sp..num..sp..err..sp..num..sp.."("..rel..")")
+
+ -- print (v,"|", s,"|",e,"|",r)
+ return make(tonumber(v) or error("error while parsing: "..str),
+             tonumber(e) or nil,
+             r=="%")
+end
+ 
+
+
 --[[
+dofile ("display.lua")
 
-a = vnew ( 100000, 1)
-b = vnew ( 12, 1)
-c = vadd ( a , b)
+a = vreader ("200+-5")
+b = vreader ("200±5")
+c = vreader ("200+-5%")
+d = vreader ("200±5%")
+print(a.abs(), b.abs(), c.abs(), d.abs())
+print(a.rel(), b.rel(), c.rel(), d.rel())
 
-print()
-print(a.abs(), b.abs(), c.abs())
-print(a.rel(), b.rel(), c.rel())
-
-a = vnew ( 10, 1)
-b = vnew ( 10, 1)
-c = vmul ( a , b)
-
-print()
-print(a.abs(), b.abs(), c.abs())
-print(a.rel(), b.rel(), c.rel())
-
-a = vnew ( 30, 3)
-b = vnew ( 10, 1)
-c = vdiv ( a , b)
-
-print()
-print(a.abs(), b.abs(), c.abs())
-print(a.rel(), b.rel(), c.rel())
-
-a = vnew ( 10, 2)
-b = vnew ( 10, nil, 0.2)
-c = vnew ( 10, 2)
-d = vnew ( 10, 2)
-r = vadd (vadd ( a , b) , vadd ( c , d)) -- relative error gets smaller!!
-
-print()
-print(a.abs())
-print(a.rel())
-print(r.abs())
-print(r.rel())
-display(a.D2)
-display(r.D2)
-
-a = vnew ( 10, 2)
-b = vnew ( 10, nil, 0.2)
-c = vnew ( 10, 2)
-d = vnew ( 10, 2)
-r = vmul (vmul ( a , b) , vmul ( c , d))
-
-print()
-print(a.abs())
-print(a.rel())
-print(r.abs())
-print(r.rel())
-display(a.D2)
-display(r.d2) 
-
-print ("\n \n exact value")
-n = vnew ( 10)
-print (n.abs())
-
+a = vreader ("200   +-       5")
+b = vreader (".1±5")
+c = vreader ("   .1+-.5%")
+d = vreader ("200±5       %")
+print(a.abs(), b.abs(), c.abs(), d.abs())
+print(a.rel(), b.rel(), c.rel(), d.rel())
 ]]
 
