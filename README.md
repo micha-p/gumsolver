@@ -36,5 +36,9 @@ Further reading
 ---------------
 
 Structure and Interpretation of Computer Programs (Abelson, Sussman, and Sussman, 1984) Section 3.3
+http://mitpress.mit.edu/sicp/full-text/book/book-Z-H-22.html#%_sec_3.3.5
 
+
+Guide to the Expression of Uncertainty in Measurement (GUM) - JCGM 100:2008
+http://www.iso.org/sites/JCGM/GUM-JCGM100.htm
 
