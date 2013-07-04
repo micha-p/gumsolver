@@ -25,7 +25,7 @@ function parse (str)
       end
 
       local function number() 
-         m = check_pattern ("^-?[0-9%.]+") 
+         m = check_pattern ("^-?[%d.]+") 
          return m and assert(tonumber(m), "Error while converting to number: " .. m or "nil")
       end
       local function subexpression()
@@ -38,7 +38,7 @@ function parse (str)
       end
    
       local function skip_space() check_pattern ("%s*") end
-      local function variable() return check_pattern ("^[a-zA-Z][a-zA-Z0-9_]*") end  
+      local function variable() return check_pattern ("^[%a][%w%-]*") end  
       local function closing() return check_pattern ("^%)") end  
       local function operator() return check_pattern ("^[%+%-%*%/]") end  
       local function operand() return variable() or number() or subexpression() or nil end

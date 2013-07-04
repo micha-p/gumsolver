@@ -42,6 +42,8 @@ function process_formula(c, formula)
    local function eval(node)
    return stringtest(node) and c[node]
           or
+          stringtest(node) and process_column(c, node)
+          or
           numbertest(node) and cv(vnew(node))
           or
           tabletest(node) and apply (eval(node[1]),node[2],eval(node[3])) 
@@ -58,7 +60,7 @@ end
 function process_column(c, colname)
    local function new()
       c[colname]=make_connector()
-      return nil
+      return c[colname]
    end
 return colname:match("%+%-$") 
        or 

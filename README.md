@@ -1,48 +1,55 @@
 gumsolver
 =========
 
-constraint-based propagation of uncertainties 
+This Lua package extends the propagation of constraints to values with uncertainties. Starting with one of the most exciting sections of the wizard book, these algorithms were ported to Lua and then adapted to make better use of tables. According to the rules for propagation of errors, a network equations is filled with values and their associated uncertainties into both directions. 
 
+A command line tool is provided, which can work on files or tables or can be used interactively. In debugging mode, additional messages on any changes ("probes") are sent to stderr. Check the example files for proper use of equations. In table mode, columns for absolute or relative uncertainties are marked with traing +- or ± or % respectively and filled during output.
 
-This lua package extends the propagation of constraints to values with uncertainties. Starting with one of the most exciting sections of the wizard book, these algorithms were ported to lua and then adapted to make better use of tables. 
+## Example Usage
 
-A tool is provided, which can work on files with statements or tables or can be used interactively. In debugging mode, further messages on any changes ("probe") are sent to stderr. Check the example files for proper use of equations. In table mode, columns for absolute or relative uncertainties are marked with traing +- or ± or % respectively and filled during output.
-
-## Typical Usage
-
-gumsolver -h  
-cat statements.txt | gumsolver  
-cat tableformula.txt | gumsolver -t   
-rlwrap gumsolver -i
+./gumsolver -h  
+cat statements.txt | ./gumsolver  
+cat tableformula.txt | ./gumsolver -d "\t" -t  
+rlwrap ./gumsolver -i
 
 ## Syntax
 
-Names of variables are case-sensitive and have to start with an letter, followed by an unlimited number of upper- and lowercase letters as well as numbers and dashes. Underscores and carets are not allowed, as this might interfere with math syntax. Spacing within lines is ignored. 
+Names of variables are case-sensitive and have to start with an upper- or lowercase letter, followed by any unlimited number of letters as well as numbers and dashes. Locale settings are taken into account. Underscores and carets are not allowed, as they might interfere with math notation. Spacing between tokens within lines is ignored. Any linebreak will trigger evaluations.
 
 Notation of uncertainties:  
-v+-u v±u v+-u% v±u%
+v+-u &emsp; v±u &emsp; v+-u% &emsp; v±u%
 
 Notation of equations:  
-a=b+c a=b*c a=b*(c-d), ...
+a=b+c &emsp; a=b\*c &emsp; a=b\*(c-d) &emsp; ...
 
-The order of precedence is as usual and can be modified by brackets. So far, variables have to be declared before first usage.
+The order of precedence is as usual and can be modified by brackets. 
+
+
+## Commands for interactions and pipelined files
+
+	a 	Declare variable (will be automated)
+	a=12    Assign value
+	a=12+-3 Assign value with uncertainty
+	a=12+-3% Assign value with uncertainty (percentage of value)
+	a  	Forget value
+	a=b*c	Submit equation for declared variables
+	c=   	Set propagated value (to be implemented)
 
 ## Present Limitations
+
+Declaration of variables is neccessary before assignment
+
+Constant values within formulas are fixed without any uncertainties. Otherwise use variables.
 
 a=b+c+d will not resolve into all directions as it is converted to subexpressions with binary operators: a = (a+b)+c
 
 s=a*a will not resolve into all directions, the reason is given as an excercise.
 
-Declaration of variables neccessary in most cases
-
-So far, the grammar is based on a chaotic network of regular expressions. 
-
 ## Future Improvements
 
-Ensure range for allowed letters to latin-1.  
-Formal description of the grammar, as well as a better parser.  
+Formal description of the grammar, as well as a clean parser instead of nested regular expressions.  
 Group of samples v=x1,x2,x3,...,xn.  
-Tablemode considering columns as arrays of values.  
+Tablemode considering columns as arrays of values.
 
 ## Licence
 
