@@ -125,12 +125,25 @@ function cdiv (x,y) local z = make_connector(); gendiv (x,y,z) return z end
 function cv   (x  ) local z = make_connector(); genset (x,  z) return z end
 
 
---[[
 
+--[[
 init_algebra (function(a,b) return a+b end, 
               function(a,b) return a-b end, 
               function(a,b) return a*b end, 
               function(a,b) return a/b end)
+
+a = make_connector()
+b = make_connector()
+c=cadd(a,b)
+
+probe("A",a)
+probe("B",b)
+probe("C",c)
+
+a.set(001, 2)
+b.set(001, 3)
+b.forget(001)
+c.set(001, 7)
 
 C = make_connector()
 F = cadd (cmul (cdiv(cv(9),cv(5)) , C) , cv(32) )
@@ -152,6 +165,8 @@ K.forget("user")
 R.set("user", 80)
 R.forget("user")
 R.set("user", 0)
-
-
+R.forget("user")
+C.set("user", 100)
 ]]
+
+

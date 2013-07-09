@@ -1,5 +1,6 @@
 #! /usr/bin/lua
 
+dofile ("display.lua")
 dofile ("constraints_with_values.lua")
 
 VERSION = "1.0"
@@ -41,61 +42,35 @@ end
 function process_new(c,name)
    c[name]=make_connector()
    probe (name, c[name])
-   if DEBUG then printprobe2stderr (name, "?") end
 return c[name]
-end
-
-function process_formula_probe(c, name, expr)
-   local function apply (op1, infix, op2)
-   return infix=="+" and cadd (op1, op2)
-          or
-          infix=="-" and csub (op1, op2)
-          or
-          infix=="*" and cmul (op1, op2)
-          or
-          infix=="/" and cdiv (op1, op2)
-   end
-
-   local function eval(node)
-   return stringtest(node) and c[node]
-          or
-          stringtest(node) and process_new(c, node)
-          or
-          numbertest(node) and cv(vnew(node))
-          or
-          tabletest(node) and apply (eval(node[1]),node[2],eval(node[3])) 
-          or
-          error ("Can't resolve expression: "..node)
-   end 
-   c[name]=eval(parse(expr))
-return not nil
 end
 
 
 function process_line (c, input)   
-   local name=input:match("%s*([^=]+)%s*=?")
+   local name=input:match("%s*([%a][%w%-]*)%s*=?")
    local expr=input:match(".*=(.*)$")
    if c[name] then
-         if DEBUG then printprobe2stderr (name, expr or "?") end
+         if DEBUG then printprobe2stderr (name, ":", expr or "?") end
          run (c, c[name], expr and vreader(expr))
    else 
       if expr then
-         process_formula_probe (c, name, expr)
-         if DEBUG then printprobe2stderr (name, expr) end
+         probe (name, process_formula (c, input))
+         if DEBUG then printprobe2stderr (name, ":", expr) end
       else
          process_new (c, name)
+         if DEBUG then printprobe2stderr (name, ":", "?") end
       end
    end 
 end
 
 
-function printprobe2stderr (name, value)
-    io.stderr:write (name .. "\t=\t" .. tostring(value) .."\n")
+function printprobe2stderr (name, sep, value)
+    io.stderr:write (name .. "\t " .. sep .. " \t" .. tostring(value) .."\n")
 end
 
 function probe2stderr (name, connector)
   local me = {}
-  me = make_actor (function () printprobe2stderr (name, genout (connector.get())) end, function () printprobe2stderr (name,"?") end)
+  me = make_actor (function () printprobe2stderr (name, genout (connector.get())) end, function () printprobe2stderr (name,"=","?") end)
   connector.connect(me)
   return me
 end
@@ -125,6 +100,9 @@ else
   if DEBUG  then io.stderr:write(SCRIPT.." version "..VERSION.."   DEBUG MODE\n") end
   if PROMPT then io.write(PROMPT) end
   for line in io.lines() do 
+     line = line:match("%s*(.*)$")
+     line = line:find("#") and line:match("([^#]*)#.*$") or line
+     if line=="DUMP" then display(CONNECTORS); line="" end
      if line:len() > 0 then process_line (CONNECTORS, line) end
      if PROMPT then io.write(PROMPT) end 
   end

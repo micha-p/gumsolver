@@ -1,4 +1,4 @@
-dofile("display.lua")
+
 
 --[[
 
@@ -25,8 +25,8 @@ function parse (str)
       end
 
       local function number() 
-         m = check_pattern ("^-?[%d.]+") 
-         return m and assert(tonumber(m), "Error while converting to number: " .. m or "nil")
+         local m = check_pattern ("^-?[%d._]+") 
+         return m and assert(tonumber(m:gsub("_",""),10), "Error while converting to number: " .. m or "nil")
       end
       local function subexpression()
          local m = check_pattern ("^%(") 
@@ -57,7 +57,7 @@ function parse (str)
       end
       if level>1 and not closing() then error("closing bracket missing before end") end
       if level==1 and closing() then error("too many closing brackets") end
-      return e, pos
+      return #e==1 and e[1] or e , pos
    end
    return expression (str,1, #str,1)
 end
@@ -81,10 +81,9 @@ end
 
 function find_first_highest_rank (expr)
    rank={["+"]= 1,["-"]= 1,["*"]= 2,["/"]= 2}
-   display (rank)     
    local pos=2
    for i,v in ipairs (expr) do
-      print (i,v,rank[v],rank[expr[pos]])
+      -- print (i,v,rank[v],rank[expr[pos]])
       if math.mod(i, 2) == 0 and rank[v] > rank[expr[pos]] then pos=i end
    end
 return pos
@@ -108,9 +107,19 @@ function order (expr)
 end
 
 --[[
-display (uncurry (parse ("a+b+c+d+d")))
-display (uncurry (parse ("a+b+c*d+d")))
+dofile("display.lua")
+display (uncurry (parse ("a+b+c+d")))
+display (uncurry (parse ("a+b+c*d+100")))
 display (find_first_highest_rank (parse ("a+b+c+d+d")))
-display (order (parse ("a+b+c*d+d")))
+display (order (parse ("a+b+c*d")))
+display (order (parse ("a+b+c*d")))
 display (order (parse ("a+b*c/d")))
+display (order (parse "10"))
+display (parse "area")
+display (parse "1_000_000")
+
+display (parse "C * 9 / 5 + 32")
+display (order (parse "C * 9 / 5  + 32"))
+display (order (parse "C * (9 / 5 ) + 32"))
+display (order (parse "( (9 / 5 ) * C ) + 32"))
 ]]

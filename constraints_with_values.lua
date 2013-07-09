@@ -51,10 +51,10 @@ function process_formula(c, formula)
           error ("Can't resolve expression: "..node)
    end 
 
-   name=formula:match("%s*(.+)%s*=")
+   name=formula:match("%s*([%a][%w%-]*)%s*=")
    expr=formula:match(".*=(.*)$")
-   c[name]=eval(parse(expr))
-return not nil
+   c[name]=eval(order(parse(expr)))
+return c[name]
 end
     
 function process_column(c, colname)
@@ -90,5 +90,30 @@ function print_result (c, colnames)
 return r
 end
 
+--[[
+c={}
+dofile ("display.lua")
 
+process_column (c, "C")
+process_column (c, "F = ( (9 / 5 ) * C ) + 32" )
+process_column (c, "K = C + 273.15")
+process_column (c, "R = 80 * (C / 100)")
+
+probe ("Celsius    ", c["C"])
+probe ("Fahrenheit ", c["F"])
+probe ("Kelvin     ", c["K"])
+probe ("Reaumur    ", c["R"])
+
+run(c,c["C"], 25)
+run(c,c["F"], 212)
+run(c,c["C"])
+run(c,c["F"], 212)
+run(c,c["F"])
+run(c,c["K"],0)
+run(c,c["K"])
+run(c,c["R"], 80)
+run(c,c["R"])
+run(c,c["R"], 0)
+run(c,c["R"])
+run(c,c["C"], 100) ]]
 
