@@ -45,8 +45,8 @@ function process_formula(c, formula)
           error ("Can't resolve expression: "..node)
    end 
 
-   name=formula:match("%s*([%a][%w%-]*)%s*=")
-   expr=formula:match(".*=(.*)$")
+   name=extract_name(formula)
+   expr=extract_expr(formula)
    c[name]=eval(order(parse(expr)))
 return c[name]
 end

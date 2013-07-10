@@ -14,7 +14,7 @@ rlwrap ./gumsolver -i
 
 ## Syntax
 
-Names of variables are case-sensitive and have to start with an upper- or lowercase letter, followed by any unlimited number of letters as well as numbers and dashes. Locale settings are taken into account. Underscores and carets are not allowed, as they might interfere with math notation. Spacing between tokens within lines is ignored. Any linebreak will trigger evaluations.
+Names of variables are case-sensitive and have to start with an upper- or lowercase letter, followed by any unlimited number of letters as well as numbers and dots. Locale settings are taken into account. Underscores or carets or dashes are not allowed, as they might interfere with math notation. Spacing between tokens within lines is ignored. Any linebreak will trigger evaluations.
 
 Notation of uncertainties:  
 v+-u &emsp; v±u &emsp; v+-u% &emsp; v±u%

@@ -1,48 +1,45 @@
+NAMEPATTERN="[%a][%w%.]*"
 
+function extract_name (s)
+return s:match("%s*("..NAMEPATTERN..")%s*=?")
+end 
 
---[[
-
-V 0.2 operator precedence
-V 0.1 init
-
-]]
-
+function extract_expr (s)
+return s:match(".*=%s*(.*)%s*$")
+end 
 
 
 function parse (str) 
    local function expression (str, pos, len, level)
       local e={}
       local i=1
-   
       local function check_pattern (pattern)
          if pos > len then 
             return nil
          else
-            m = string.match (str,pattern, pos)
+            m = string.match (str, "^"..pattern, pos)
             if m then pos = pos + #m end
             return m
          end
       end
-
+      local function skip_space() return check_pattern ("%s*") end
+      local function variable() return check_pattern (NAMEPATTERN) end  
+      local function opening() return check_pattern ("%(") end  
+      local function closing() return check_pattern ("%)") end  
       local function number() 
-         local m = check_pattern ("^-?[%d._]+") 
+         local m = check_pattern ("-?[%d._]+") 
          return m and assert(tonumber(m:gsub("_",""),10), "Error while converting to number: " .. m or "nil")
       end
       local function subexpression()
-         local m = check_pattern ("^%(") 
+         local m = opening () 
          if m then 
             s, newpos = expression (str, pos, len, level+1)
             pos=newpos
          end
          return s
       end
-   
-      local function skip_space() check_pattern ("%s*") end
-      local function variable() return check_pattern ("^[%a][%w%-]*") end  
-      local function closing() return check_pattern ("^%)") end  
-      local function operator() return check_pattern ("^[%+%-%*%/]") end  
+      local function operator() return check_pattern ("[%+%-%*%/]") end  
       local function operand() return variable() or number() or subexpression() or nil end
-   
    
       skip_space()
       e[i]=operand()

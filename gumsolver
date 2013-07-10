@@ -51,7 +51,9 @@ end
 
 
 function process_line (c, input)   
-   local name=input:match("%s*([%a][%w%-]*)%s*=?")
+   local name=extract_name(input)
+   local expr=extract_expr(input)
+   local name=input:match("%s*([%a][%w%.]*)%s*=?")
    local expr=input:match(".*=%s*(.*)%s*$")
    if c[name] then
          if c[expr] then
