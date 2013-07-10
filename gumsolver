@@ -49,41 +49,57 @@ while arg[1] do
 end
 
 
-function process_new(c,name)
-   c[name]=make_connector("")
-   probe (name, c[name])
-return c[name]
-end
-
 
 function process_line (c, input)   
    local name=input:match("%s*([%a][%w%-]*)%s*=?")
-   local expr=input:match(".*=(.*)$")
+   local expr=input:match(".*=%s*(.*)%s*$")
    if c[name] then
-         if DEBUG then printprobe2stderr (name, ":", expr and vreader(expr) or "?") end
-         run (c, c[name], expr and vreader(expr))
+         if c[expr] then
+            if DEBUG then print2stderr (name, ":", expr) end
+            pipe(c[name],c[expr])
+         elseif expr then
+            if DEBUG then print2stderr (name, ":", expr) end
+            run (c, c[name], vreader(expr))
+         else
+            if DEBUG then print2stderr (name, ":", "?") end
+            run (c, c[name])
+         end
    else 
       if expr then
+         if DEBUG then print2stderr (name, ":", expr) end
          probe (name, process_formula (c, input))
-         if DEBUG then printprobe2stderr (name, ":", expr) end
       else
-         process_new (c, name)
-         if DEBUG then printprobe2stderr (name, ":", "?") end
+         if DEBUG then print2stderr (name, ":", "?") end
+         c[name]=make_connector("")
+         probe (name, c[name])
       end
    end 
 end
 
 
-function printprobe2stderr (name, sep, value)
-    io.stderr:write (name .. "\t " .. sep .. " \t" .. tostring(value) .."\n")
+function dump_connectors() 
+   function short (table)
+   return string.gsub (tostring(table),"table: ","")
+   end
+
+   for k,v in pairs (CONNECTORS) do 
+      value=(v.get())
+      informant=(v.value())
+      ltable=(v.listeners())
+      if DEBUG then 
+         io.write (short(v), "\t") 
+         for k,l in pairs(ltable) do io.write (informant == l and "!" or "", short(l)," ") end 
+         io.write ("\t") 
+      end    
+      print (k, 
+             (v.info()) or "", 
+             informant == 1 and "user" or "",
+             informant and RELATIVE and value.rel() or informant and value.abs() or "")
+   end
 end
 
-function probe2stderr (name, connector)
-  local me = {}
-  me = make_actor (function () printprobe2stderr (name, genout (connector.get())) end, function () printprobe2stderr (name,"=","?") end)
-  connector.connect(me)
-  return me
-end
+
+
 
 
 if TABLE then
@@ -94,30 +110,12 @@ else
    if PROMPT then io.write(PROMPT) end
    for line in io.lines() do 
       line = line:match("%s*(.*)$")
-      line = line:find("#") and line:match("([^#]*)#.*$") or line
-      if line:find("^!D.*") then 
-         function short (table)
-         return string.gsub (tostring(table),"table: ","")
-         end
-         for k,v in pairs (CONNECTORS) do 
-            value=(v.get())
-            informant=(v.value())
-            ltable=(v.listeners())
-            print (k, (v.info()) or "", 
-                   informant == 1 and "user" or "",
-                   informant and RELATIVE and value.rel() or informant and value.abs() or "")
-            if DEBUG then 
-               io.write (short(v), "\t") 
-               for k,l in pairs(ltable) do io.write (short(l), informant == l and "! " or " ") end 
-               print () 
-               print () 
-               end    
-         end line="" 
-      end
       if line:find("^!Q") then break end
       if line:find("^!P") then print (line:match("^!PR?I?N?T? (.*)$") or "") ; line="" end
       if line:find("^!R") then RELATIVE=not nil ; line="" end
       if line:find("^!A") then RELATIVE=nil     ; line="" end
+      if line:find("^!D.*") then dump_connectors(); line="" end
+      line = line:find("#") and line:match("([^#]*)#.*$") or line
       if line:len() > 0 then process_line (CONNECTORS, line) end
       if PROMPT then io.write(PROMPT) end 
    end

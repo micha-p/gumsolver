@@ -9,12 +9,34 @@ end
 -------------------------------------------------------------------------
 -------------------------------------------------------------------------
 
+-- constraints, probes and pipes are all actors, which understand the signals "new" and "lost"
+-- while creation they attach themselve to the given connectors
+
 function make_actor (process_new_value, process_forget_value)  
   local me = {}
   me.new  = function () process_new_value() end
   me.lost = function () process_forget_value() end
   return me
 end
+
+function pipe (a, b)  
+  local me = {}
+  local function process_new_value ()
+    if     a.value() then b.set (me, a.get()) 
+    elseif b.value() then a.set (me, b.get()) 
+    end
+  end
+  local function process_forget_value ()
+    a.forget(me)
+    b.forget(me)
+    process_new_value()
+  end
+  me = make_actor (process_new_value, process_forget_value) 
+  a.connect(me)
+  b.connect(me)
+  return me
+end
+
 
 function constraint (a, b, c, forward , back)  
   local me = {}
@@ -53,14 +75,14 @@ function make_connector(hint)
   local me = {}
   local value = nil
   local informant = nil
-  local constraints = {}
+  local actors = {}
   local info = hint
 
   local set_my_value = function (setter, newval)
     if (not informant) then 
       value = newval
       informant = setter
-      table.foreach (constraints, function (k, v) if v ~= setter then v.new() end end)
+      table.foreach (actors, function (k, v) if v ~= setter then v.new() end end)
     elseif not geneqv (value, newval) then print ("Contradiction" , genout (value) , genout (newval))
     end
   end
@@ -68,17 +90,17 @@ function make_connector(hint)
   local forget_my_value = function (retractor)
     if retractor == informant then
        informant = nil
-       table.foreach (constraints, function (k, v) if v ~= retractor then v.lost() end end)
+       table.foreach (actors, function (k, v) if v ~= retractor then v.lost() end end)
     end
   end
   
   local connect_actor = function (new_constraint)
-    if not table.find (constraints, new_constraint) then table.insert (constraints, new_constraint) end
+    if not table.find (actors, new_constraint) then table.insert (actors, new_constraint) end
     if informant then new_constraint.new() end
   end
 
   me.info    	= function () return info end
-  me.listeners  = function () return constraints end
+  me.listeners  = function () return actors end
   me.value 	= function () return informant end
   me.get    	= function () return value end
   me.set    	= function (actor, new) set_my_value    (actor, new) end

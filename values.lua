@@ -37,7 +37,7 @@ function vreader (str)
  r= string.match(str,sp..num..sp..err..sp..num..sp.."("..rel..")")
 
 -- print (v,"|", s,"|",e,"|",r)
- return make(tonumber(v:gsub("_",""),10) or error("error while parsing: "..str),
+ return make(tonumber(v:gsub("_",""),10) or error("error while parsing as value with uncertainty: "..str),
              tonumber(e:gsub("_",""),10) or nil,
              r=="%")
 end

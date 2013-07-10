@@ -27,13 +27,13 @@ The order of precedence is as usual and can be modified by brackets.
 
 ## Commands for interactions and pipelined files
 
-	a 	Declare variable (will be automated)
-	a=12    Assign value
-	a=12+-3 Assign value with uncertainty
-	a=12+-3% Assign value with uncertainty (percentage of value)
-	a  	Forget value
-	a=b*c	Submit equation for declared variables
-	c=   	Set propagated value (to be implemented)
+	a         Declare variable (will be automated)
+	a=12      Assign value
+	a=12+-3   Assign value with uncertainty
+	a=12+-3%  Assign value with uncertainty (percentage of value)
+	a         Forget value
+	a=b*c     Submit equation for declared variables
+	c=        Set propagated value (to be implemented)
 	
 	
 ## Special syntax at the command line
@@ -41,16 +41,16 @@ The order of precedence is as usual and can be modified by brackets.
 Comments start with a hash-sign and last until end of line.
 It is possible to submit special directives following an exclamation mark. Usuanlly, the first letter is distinctive
 
-!DUMP 	Show content of network  
-!PRINT	Send the rest of the line to standard output  
-!ABSOLUTE Switch to display absolute uncertainties (default)  
-!RELATIVE Switch to display relative uncertainties  
-!INCLUDE Literal inclusion of the specified file (TODO)  
-!QUIT	Stop processing regardless of any following content
+	!DUMP 	   Show content of network
+	!PRINT	   Send the rest of the line to standard output
+	!ABSOLUTE  Switch to display absolute uncertainties (default)
+	!RELATIVE  Switch to display relative uncertainties  
+	!INCLUDE   Literal inclusion of the specified file (TODO)
+	!QUIT	   Stop processing regardless of any following content
 
 ## Present Limitations
 
-Declaration of variables is neccessary before assignment
+Declaration of variables might be neccessary before assignment
 
 Constant values within formulas are fixed without any uncertainties. Otherwise use variables.
 
