@@ -8,8 +8,8 @@ A command line tool is provided, which can work on files or tables or can be use
 ## Example Usage
 
 ./gumsolver -h  
-cat statements.txt | ./gumsolver  
-cat tableformula.txt | ./gumsolver -d "\t" -t  
+cat demo/example.txt | ./gumsolver  
+cat demo/tableformula.txt | ./gumsolver -d "\t" -t  
 rlwrap ./gumsolver -i
 
 ## Syntax
@@ -34,6 +34,19 @@ The order of precedence is as usual and can be modified by brackets.
 	a  	Forget value
 	a=b*c	Submit equation for declared variables
 	c=   	Set propagated value (to be implemented)
+	
+	
+## Special syntax at the command line
+
+Comments start with a hash-sign and last until end of line.
+It is possible to submit special directives following an exclamation mark. Usuanlly, the first letter is distinctive
+
+!DUMP 	Show content of network  
+!PRINT	Send the rest of the line to standard output  
+!ABSOLUTE Switch to display absolute uncertainties (default)  
+!RELATIVE Switch to display relative uncertainties  
+!INCLUDE Literal inclusion of the specified file (TODO)  
+!QUIT	Stop processing regardless of any following content
 
 ## Present Limitations
 

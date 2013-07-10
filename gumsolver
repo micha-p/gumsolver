@@ -97,14 +97,21 @@ else
       line = line:find("#") and line:match("([^#]*)#.*$") or line
       if line:find("^!D.*") then 
          function short (table)
-         return string.gsub (string.gsub (tostring(table),"table: ",""), "^1$","user     ")
+         return string.gsub (tostring(table),"table: ","")
          end
          for k,v in pairs (CONNECTORS) do 
             value=(v.get())
             informant=(v.value())
-            print (short(v), k, (v.info()), 
-                   informant and short( informant ) or "",
-                   informant and RELATIVE and value.rel() or informant and value.abs() or "") 
+            ltable=(v.listeners())
+            print (k, (v.info()) or "", 
+                   informant == 1 and "user" or "",
+                   informant and RELATIVE and value.rel() or informant and value.abs() or "")
+            if DEBUG then 
+               io.write (short(v), "\t") 
+               for k,l in pairs(ltable) do io.write (short(l), informant == l and "! " or " ") end 
+               print () 
+               print () 
+               end    
          end line="" 
       end
       if line:find("^!Q") then break end

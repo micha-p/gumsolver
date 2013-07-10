@@ -77,12 +77,13 @@ function make_connector(hint)
     if informant then new_constraint.new() end
   end
 
-  me.info   = function () return info end
-  me.value  = function () return informant end
-  me.get    = function () return value end
-  me.set    = function (actor, new) set_my_value    (actor, new) end
-  me.forget = function (actor)      forget_my_value (actor)      end
-  me.connect= function (actor)      connect_actor   (actor)      end
+  me.info    	= function () return info end
+  me.listeners  = function () return constraints end
+  me.value 	= function () return informant end
+  me.get    	= function () return value end
+  me.set    	= function (actor, new) set_my_value    (actor, new) end
+  me.forget 	= function (actor)      forget_my_value (actor)      end
+  me.connect	= function (actor)      connect_actor   (actor)      end
 
   return me
 end

@@ -1,0 +1,45 @@
+#
+# consider table top with horizontal dimensions w and h and of thickness d
+#
+
+!PRINT
+!P ---------1
+w
+h
+area=w*h
+
+
+w=1.5+-5% 	# value with uncertainty [m]
+h=1		# exact value [m]
+# now surface area is calculated
+
+
+
+# However, we want a surface of exactly one square meter and the known w
+#
+# so we delete value h and propagate the new value for the area to get a new set of values
+
+!P ---------2
+h
+!P ---------3
+area=1
+
+# Of course we have to move this part, so we want to know its weight
+
+mass
+volume = area * d
+density = mass / volume
+
+!P ---------3
+# we just know it is a wooden table, but not the kind of timber.
+# it could be oak or birch, so we give a huge realtive uncertainty
+density = 700+-20%   # kg per m3 
+d=0.025+-0.0001        # thickness of about one inch
+
+!P ---------4
+# finally we want to know relative uncertainties and therefore dump our network
+
+!REL
+!DUMP
+
+
