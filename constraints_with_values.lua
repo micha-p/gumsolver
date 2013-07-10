@@ -20,23 +20,23 @@ function run (connectortable, connector, val , abs , rel)
    end
 end
 
-function process_record (c, rec)
-   run(c)
-   for name,connector in pairs(c) do 
-      run (c, connector, rec[name], rec[name.."+-"] or rec[name.."±"], rec[name.."%"] and rec[name.."%"]/100) 
-   end
-end
 
 
 function process_formula(c, formula)
+   local function cwv_add (x,y) local z = make_connector("+"); table.insert(c,z); genadd (x,y,z) return z end
+   local function cwv_sub (x,y) local z = make_connector("-"); table.insert(c,z); gensub (x,y,z) return z end
+   local function cwv_mul (x,y) local z = make_connector("*"); table.insert(c,z); genmul (x,y,z) return z end
+   local function cwv_div (x,y) local z = make_connector("/"); table.insert(c,z); gendiv (x,y,z) return z end
+   local function cwv_v   (x  ) local z = make_connector("c"); table.insert(c,z); genset (x,  z) return z end
+
    local function apply (op1, infix, op2)
-   return infix=="+" and cadd (op1, op2)
+   return infix=="+" and cwv_add (op1, op2)
           or
-          infix=="-" and csub (op1, op2)
+          infix=="-" and cwv_sub (op1, op2)
           or
-          infix=="*" and cmul (op1, op2)
+          infix=="*" and cwv_mul (op1, op2)
           or
-          infix=="/" and cdiv (op1, op2)
+          infix=="/" and cwv_div (op1, op2)
    end
 
    local function eval(node)
@@ -44,7 +44,7 @@ function process_formula(c, formula)
           or
           stringtest(node) and process_column(c, node)
           or
-          numbertest(node) and cv(vnew(node))
+          numbertest(node) and cwv_v(vnew(node))
           or
           tabletest(node) and apply (eval(node[1]),node[2],eval(node[3])) 
           or
@@ -57,38 +57,7 @@ function process_formula(c, formula)
 return c[name]
 end
     
-function process_column(c, colname)
-   local function new()
-      c[colname]=make_connector()
-      return c[colname]
-   end
-return colname:match("%+%-$") 
-       or 
-       colname:match("±$") 
-       or 
-       colname:match ("%%$")
-       or 
-       colname:match ("=") and process_formula(c, colname)
-       or
-       new()
-end
 
-function print_result (c, colnames) 
-   local con,value,check
-   local r={}
-   for k,v in ipairs(colnames) do 
-      con=c[v]
-      gen=c[v:match("(.*)%+%-$") or v:match("(.*)±$") or v:match("(.*)%%$")]
-      r[k] = con and con.value() and con.get()["v"]
-             or 
-             gen and gen.value() and v:find("%%$") and math.sqrt(gen.get()["d2"])*100 
-             or 
-             gen and gen.value() and math.sqrt(gen.get()["D2"])
-             or
-             "."
-   end
-return r
-end
 
 --[[
 c={}

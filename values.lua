@@ -22,7 +22,7 @@ function vdiv (a, b)    return vfast (a.v / b.v , nil, a.d2 + b.d2) end
 
 function vreader (str)
  local sp="%s*"
- local num="-?%d*%.?%d*"
+ local num="-?[%d_]*%.?[%d_]*"
  local err="[%+%-%±]*"
  local rel="%%?"
  local v,s,e,r
@@ -36,9 +36,9 @@ function vreader (str)
  e= string.match(str,sp..num..sp..err..sp.."("..num..")"..sp..rel)
  r= string.match(str,sp..num..sp..err..sp..num..sp.."("..rel..")")
 
- -- print (v,"|", s,"|",e,"|",r)
- return make(tonumber(v) or error("error while parsing: "..str),
-             tonumber(e) or nil,
+-- print (v,"|", s,"|",e,"|",r)
+ return make(tonumber(v:gsub("_",""),10) or error("error while parsing: "..str),
+             tonumber(e:gsub("_",""),10) or nil,
              r=="%")
 end
  

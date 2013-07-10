@@ -2,12 +2,14 @@
 
 dofile ("display.lua")
 dofile ("constraints_with_values.lua")
+dofile ("table-mode.lua")
 
 VERSION = "1.0"
 SCRIPT=string.match(arg[0],"[^%w%-]*([%w%-]*)$")
 TABLE=nil 
 DEBUG=nil
 PROMPT=nil
+RELATIVE=nil
 DELIMITER=","
 CONNECTORS={}
 
@@ -18,8 +20,10 @@ help[3]="options:  -t             table mode"
 help[4]="          -d delimiter   column separator for table"
 help[5]="          -i             interactive (use readline wrapper)"
 help[6]="          -D             debug messages"
-help[7]="          -v             display version"
-help[8]="          -h             this help"
+help[7]="          -a             start displaying absolute uncertainties (default)"
+help[8]="          -r             start displaying relative uncertainties"
+help[9]="          -v             display version"
+help[10]="         -h             this help"
 
 while arg[1] do
    TABLE  = TABLE  or arg[1]=="-t"
@@ -28,6 +32,12 @@ while arg[1] do
    if arg[1]=="-d" then 
       table.remove(arg,1)
       DELIMITER = ( arg[1]=="\\t" and "\t" or arg[1])
+   end
+   if arg[1]=="-r" then 
+      RELATIVE = not nil
+   end
+   if arg[1]=="-a" then 
+      RELATIVE = nil
    end
    if arg[1]=="-h" then 
       for k,v in ipairs (help) do print(v) end; return      
@@ -40,7 +50,7 @@ end
 
 
 function process_new(c,name)
-   c[name]=make_connector()
+   c[name]=make_connector("")
    probe (name, c[name])
 return c[name]
 end
@@ -50,7 +60,7 @@ function process_line (c, input)
    local name=input:match("%s*([%a][%w%-]*)%s*=?")
    local expr=input:match(".*=(.*)$")
    if c[name] then
-         if DEBUG then printprobe2stderr (name, ":", expr or "?") end
+         if DEBUG then printprobe2stderr (name, ":", expr and vreader(expr) or "?") end
          run (c, c[name], expr and vreader(expr))
    else 
       if expr then
@@ -77,36 +87,34 @@ end
 
 
 if TABLE then
-   records,header,colnames=csv_read(DELIMITER)
-   for col, colname in ipairs(header) do process_column(CONNECTORS, colname) end 
-   if DEBUG then 
-      for name,connector in pairs(CONNECTORS) do probe2stderr(name,connector) end
-      io.stderr:write (SCRIPT.." version "..VERSION.. "   TABLE MODE  Separator:")
-      io.stderr:write ((DELIMITER == "\t") and "TAB" 
-                       or
-                       (DELIMITER == " ") and "SPACE"
-                       or
-                       DELIMITER) 
-      io.stderr:write ("      DEBUGGING TO STDERR\n")
-   end
-   print(unpack(header))
-   for line, record in ipairs(records) do 
-      process_record (CONNECTORS, record)
-      r= print_result(CONNECTORS, colnames)
-      print(unpack(r))
-   end
+   process_table(CONNECTORS, DELIMITER)
 else
-  if PROMPT and not DEBUG then io.write(SCRIPT.." version "..VERSION.."\n") end
-  if DEBUG  then io.stderr:write(SCRIPT.." version "..VERSION.."   DEBUG MODE\n") end
-  if PROMPT then io.write(PROMPT) end
-  for line in io.lines() do 
-     line = line:match("%s*(.*)$")
-     line = line:find("#") and line:match("([^#]*)#.*$") or line
-     if line=="DUMP" then display(CONNECTORS); line="" end
-     if line:len() > 0 then process_line (CONNECTORS, line) end
-     if PROMPT then io.write(PROMPT) end 
-  end
-  print()
+   if PROMPT and not DEBUG then io.write(SCRIPT.." version "..VERSION.."\n") end
+   if DEBUG  then io.stderr:write(SCRIPT.." version "..VERSION.."   DEBUG MODE\n") end
+   if PROMPT then io.write(PROMPT) end
+   for line in io.lines() do 
+      line = line:match("%s*(.*)$")
+      line = line:find("#") and line:match("([^#]*)#.*$") or line
+      if line:find("^!D.*") then 
+         function short (table)
+         return string.gsub (string.gsub (tostring(table),"table: ",""), "^1$","user     ")
+         end
+         for k,v in pairs (CONNECTORS) do 
+            value=(v.get())
+            informant=(v.value())
+            print (short(v), k, (v.info()), 
+                   informant and short( informant ) or "",
+                   informant and RELATIVE and value.rel() or informant and value.abs() or "") 
+         end line="" 
+      end
+      if line:find("^!Q") then break end
+      if line:find("^!P") then print (line:match("^!PR?I?N?T? (.*)$") or "") ; line="" end
+      if line:find("^!R") then RELATIVE=not nil ; line="" end
+      if line:find("^!A") then RELATIVE=nil     ; line="" end
+      if line:len() > 0 then process_line (CONNECTORS, line) end
+      if PROMPT then io.write(PROMPT) end 
+   end
+   print()
 end
 
 

@@ -49,11 +49,12 @@ function probe (name, connector)
 end
 
 
-function make_connector()
+function make_connector(hint)
   local me = {}
   local value = nil
   local informant = nil
   local constraints = {}
+  local info = hint
 
   local set_my_value = function (setter, newval)
     if (not informant) then 
@@ -76,6 +77,7 @@ function make_connector()
     if informant then new_constraint.new() end
   end
 
+  me.info   = function () return info end
   me.value  = function () return informant end
   me.get    = function () return value end
   me.set    = function (actor, new) set_my_value    (actor, new) end
