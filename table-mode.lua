@@ -1,15 +1,3 @@
-function print2stderr (name, sep, value)
-    io.stderr:write (name .. "\t " .. sep .. " \t" .. tostring(value) .."\n")
-end
-
-function probe2stderr (name, connector)
-  local me = {}
-  me = make_actor (function () print2stderr (name, PRINT (connector.get())) end, function () print2stderr (name,"=","?") end)
-  connector.connect(me)
-  return me
-end
-
-
 function process_record (c, rec)
    run(c)
    for name,connector in pairs(c) do 
@@ -18,8 +6,10 @@ function process_record (c, rec)
 end
 
 function process_column(c, colname)
+   print("COLUMNS:",colname)
    local function new()
-      c[colname]=make_connector()
+      print("NEW:",colname)
+      c[colname]=make_connector(colname)
       return c[colname]
    end
 return colname:match("%+%-$") 
@@ -28,9 +18,9 @@ return colname:match("%+%-$")
        or 
        colname:match ("%%$")
        or 
-       colname:match ("=") and process_formula(c, colname)
+       colname:match ("=") and process_formula(c, CONSTRAINTS, colname)
        or
-       new()
+       new(colname)
 end
 
 function print_result (c, colnames) 
@@ -50,11 +40,11 @@ function print_result (c, colnames)
 return r
 end
 
-function process_table(CONNECTORS, DELIMITER)
+function process_table(c, DELIMITER)
    records,header,colnames=csv_read(DELIMITER)
-   for col, colname in ipairs(header) do process_column(CONNECTORS, colname) end 
+   for col, colname in ipairs(header) do process_column(c, colname) end 
    if DEBUG then 
-      for name,connector in pairs(CONNECTORS) do probe2stderr(name,connector) end
+      for name,connector in pairs(c) do probe2stderr(name,connector) end
       io.stderr:write (SCRIPT.." version "..VERSION.. "   TABLE MODE  Separator:")
       io.stderr:write ((DELIMITER == "\t") and "TAB" 
                        or
@@ -65,8 +55,8 @@ function process_table(CONNECTORS, DELIMITER)
    end
    print(unpack(header))
    for line, record in ipairs(records) do 
-      process_record (CONNECTORS, record)
-      r= print_result(CONNECTORS, colnames)
+      process_record (c, record)
+      r= print_result(c, colnames)
       print(unpack(r))
    end
 end

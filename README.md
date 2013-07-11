@@ -50,8 +50,10 @@ It is possible to submit special directives following an exclamation mark. Usuan
 	!PRINT	   Send the rest of the line to standard output
 	!ABSOLUTE  Switch to display absolute uncertainties (default)
 	!RELATIVE  Switch to display relative uncertainties
-	!CLONE     Clones given name from constraint with one segment less. Kind of object-oriented inheritance (TODO)
+	!CLONE     Clones given name from constraint with one segment less. Prototype-based inheritance (TODO)
 	!INCLUDE   Literal inclusion of the specified file (TODO)
+	!TRACE 	   Trigger tracing on/ off (TODO)
+    	!SKIP      Skip lines until next directive (TODO)
 	!QUIT	   Stop processing regardless of any following content
 
 ## Present Limitations

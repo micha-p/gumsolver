@@ -3,16 +3,14 @@
 dofile ("display.lua")
 dofile ("constraints_with_values.lua")
 dofile ("table-mode.lua")
-
+dofile ("debug.lua")
 
 VERSION = "1.0"
 SCRIPT=string.match(arg[0],"[^%w%-]*([%w%-]*)$")
 TABLE=nil 
-DEBUG=nil
 PROMPT=nil
 RELATIVE=nil
 DELIMITER=","
-CONNECTORS={}
 EQUAL = function (a,b) return a.v == b.v and a.D2 == b.D2 end 
 PRINT = function (r)
    local rel  = function () return best(100 * math.sqrt(r.d2),2) .. "%" end
@@ -83,10 +81,11 @@ function process_line (c, input)
          elseif expr then
             if string.find (expr, "[%a*/%(%)]") then
                if DEBUG then print2stderr (name, ":=", expr) end
-               process_formula (c, input)
+               process_formula (c, CONNECTORS_TO_CONSTRAINTS, input)
             else
-               local val, err, relflag = vreader(expr) --vreader does not check percent
-               if DEBUG then print2stderr (name, ":", val.." ± "..err..relflag) end
+               local val
+               val = vreader(expr)
+               if DEBUG then print2stderr (name, ":", RELATIVE and val.rel() or val.abs()) end
                run (c, c[name], val, not relflag and err, relflag and err/100)
             end
          else
@@ -96,54 +95,14 @@ function process_line (c, input)
    else 
       if expr then
          if DEBUG then print2stderr (name, ":=", expr) end
-         process_formula (c, input)
+         process_formula (c, CONNECTORS_TO_CONSTRAINTS, input)
       else
          if DEBUG then print2stderr (name, ":", "?") end
-         c[name]=make_connector("")
+         c[name]=make_connector(name)
       end
       probe (name, c[name])
    end 
 end
-
-
-function dump_connectors(CONNECTORS) 
-
-   local tablestack={}
-   
-   local function short (t)
-      local key = table.find (tablestack, t)
-      if key then
-         return key 
-      else
-         table.insert (tablestack, t)
-         return #tablestack
-      end
-   end
-  
-   local keys={}
-   for k,v in pairs(CONNECTORS) do table.insert(keys, k) end
-   if not DEBUG then table.sort(keys) end
-   for i,key in pairs (keys) do 
-      local v = CONNECTORS[key]
-      informant=(v.value())
-      ltable=(v.listeners())
-      if DEBUG then 
-         io.write (short(v), "\t") 
-         for k,l in pairs(ltable) do io.write (informant == l and "!" or "", short(l)," ") end 
-         -- TODO: Better print into string and adjust length 
-         if #ltable < 3 or #ltable == 3 and not table.find (ltable, informant) then io.write ("\t") end
-         if #ltable < 5 then io.write ("\t") end
-         io.write ("\t") 
-      end    
-      print (key .. (string.len(key) < 8 and "\t" or ""), 
-             (v.info()) or "", 
-             informant == 1 and "user" or "",
-             informant and PRINT(v.get()) or "")
-   end
-end
-
-
-
 
 
 if TABLE then

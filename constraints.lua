@@ -15,10 +15,12 @@ end
 PRINT = function (a) return a end
 EQUAL = function (a,b) return a == b end
 
-function make_actor (process_new_value, process_forget_value)  
+function make_actor (process_new_value, process_forget_value, c, h)  
   local me = {}
-  me.new  = function () process_new_value() end
-  me.lost = function () process_forget_value() end
+  me.class = function () return c end
+  me.info  = function () return h end
+  me.new   = function () process_new_value() end
+  me.lost  = function () process_forget_value() end
   return me
 end
 
@@ -34,14 +36,14 @@ function pipe (a, b)
     b.forget(me)
     process_new_value()
   end
-  me = make_actor (process_new_value, process_forget_value) 
+  me = make_actor (process_new_value, process_forget_value,"pipe") 
   a.connect(me)
   b.connect(me)
   return me
 end
 
 
-function constraint (a, b, c, forward , back)  
+function constraint (a, b, c, forward , back,hint)  
   local me = {}
   local function process_new_value ()
     if     a.value() and b.value()then c.set(me, forward (a.get(), b.get())) 
@@ -55,7 +57,7 @@ function constraint (a, b, c, forward , back)
     c.forget(me)
     process_new_value()
   end
-  me = make_actor (process_new_value, process_forget_value) 
+  me = make_actor (process_new_value, process_forget_value,"constr",hint) 
   a.connect(me)
   b.connect(me)
   c.connect(me)
@@ -68,7 +70,7 @@ function probe (name, connector)
   local printprobe = function (value)
     print (name, " -> ", value)
   end
-  me = make_actor (function () printprobe (PRINT (connector.get())) end, function () printprobe ("?") end)
+  me = make_actor (function () printprobe (PRINT (connector.get())) end, function () printprobe ("?") end,"probe")
   connector.connect(me)
   return me
 end
@@ -102,6 +104,7 @@ function make_connector(hint)
     if informant then new_constraint.new() end
   end
 
+  me.class    	= function () return "connect" end
   me.info    	= function () return info end
   me.listeners  = function () return actors end
   me.value 	= function () return informant end

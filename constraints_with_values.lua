@@ -3,6 +3,27 @@ dofile ("values.lua")
 dofile ("csv.lua")
 dofile ("parser.lua")
 
+-- OVERLOAD!!
+function cadd (c,x,y,h) local z = make_connector(h); table.insert (c,z); genadd (x,y,z) return z end
+function csub (c,x,y,h) local z = make_connector(h); table.insert (c,z); gensub (x,y,z) return z end
+function cmul (c,x,y,h) local z = make_connector(h); table.insert (c,z); genmul (x,y,z) return z end
+function cdiv (c,x,y,h) local z = make_connector(h); table.insert (c,z); gendiv (x,y,z) return z end
+function cv   (c,x  ,h) local z = make_connector(h); table.insert (c,z); genset (x,  z) return z end
+function init_algebra (add, sub, mul, div)
+  genadd = function (a1, a2, sum)  z=constraint(a1,a2,sum , add, sub,"+") table.insert (CONSTRAINTS,z); return z end
+  gensub = function (a1, a2, diff) z=constraint(a1,a2,diff, sub, add,"-") table.insert (CONSTRAINTS,z); return z end
+  genmul = function (m1, m2, prod) z=constraint(m1,m2,prod, mul, div,"*") table.insert (CONSTRAINTS,z); return z end
+  gendiv = function (a1, a2, sum)  z=constraint(a1,a2,sum , div, mul,"/") table.insert (CONSTRAINTS,z); return z end
+  genset = function (value, connector) 
+    local me = {}
+    me = make_actor () 
+    connector.connect(me)
+    connector.set(me, value)
+    return me
+  end
+end
+-- END OVERLOAD
+
 init_algebra (vadd,vsub,vmul,vdiv)
 
 PRINT = function (v)   return v.abs() end
@@ -23,23 +44,24 @@ end
 
 
 
-function process_formula(c, formula)
+function process_formula(c,cs,formula)
+
    local function apply (op1, infix, op2)
-   return infix=="+" and cadd (op1, op2)
+   return infix=="+" and cadd (cs, op1, op2, name)
           or
-          infix=="-" and csub (op1, op2)
+          infix=="-" and csub (cs, op1, op2, name)
           or
-          infix=="*" and cmul (op1, op2)
+          infix=="*" and cmul (cs, op1, op2, name)
           or
-          infix=="/" and cdiv (op1, op2)
+          infix=="/" and cdiv (cs, op1, op2, name)
    end
 
-   local function eval(node)
+   local function eval(node,hint)
    return stringtest(node) and c[node]
           or
           stringtest(node) and process_column(c, node)
           or
-          numbertest(node) and cv(vnew(node)) -- constant value without uncertainty
+          numbertest(node) and cv(cs, vnew(node), node) -- constant value without uncertainty
           or
           tabletest(node) and apply (eval(node[1]),node[2],eval(node[3])) 
           or
