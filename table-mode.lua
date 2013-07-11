@@ -4,7 +4,7 @@ end
 
 function probe2stderr (name, connector)
   local me = {}
-  me = make_actor (function () printprobe2stderr (name, genout (connector.get())) end, function () print2stderr (name,"=","?") end)
+  me = make_actor (function () print2stderr (name, PRINT (connector.get())) end, function () print2stderr (name,"=","?") end)
   connector.connect(me)
   return me
 end
@@ -13,7 +13,7 @@ end
 function process_record (c, rec)
    run(c)
    for name,connector in pairs(c) do 
-      run (c, connector, rec[name], rec[name.."+-"] or rec[name.."±"], rec[name.."%"] and rec[name.."%"]/100) 
+      run (c, connector, rec[name], not rec[name.."%"] and (rec[name.."+-"] or rec[name.."±"]), rec[name.."%"] and rec[name.."%"]/100) 
    end
 end
 
@@ -39,11 +39,11 @@ function print_result (c, colnames)
    for k,v in ipairs(colnames) do 
       con=c[v]
       gen=c[v:match("(.*)%+%-$") or v:match("(.*)±$") or v:match("(.*)%%$")]
-      r[k] = con and con.value() and con.get()["v"]
+      r[k] = con and con.value() and best(con.get()["v"],4)
              or 
-             gen and gen.value() and v:find("%%$") and math.sqrt(gen.get()["d2"])*100 
+             gen and gen.value() and v:find("%%$") and best(math.sqrt(gen.get()["d2"])*100,2) 
              or 
-             gen and gen.value() and math.sqrt(gen.get()["D2"])
+             gen and gen.value() and best(math.sqrt(gen.get()["D2"]),3)
              or
              "."
    end

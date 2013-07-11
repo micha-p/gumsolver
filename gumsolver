@@ -4,6 +4,7 @@ dofile ("display.lua")
 dofile ("constraints_with_values.lua")
 dofile ("table-mode.lua")
 
+
 VERSION = "1.0"
 SCRIPT=string.match(arg[0],"[^%w%-]*([%w%-]*)$")
 TABLE=nil 
@@ -12,6 +13,28 @@ PROMPT=nil
 RELATIVE=nil
 DELIMITER=","
 CONNECTORS={}
+EQUAL = function (a,b) return a.v == b.v and a.D2 == b.D2 end 
+PRINT = function (r)
+   local rel  = function () return best(100 * math.sqrt(r.d2),2) .. "%" end
+   local abs  = function () return best(math.sqrt(r.D2),3) end
+ return best(r.v,4) ..  " ± " .. (RELATIVE and rel() or abs ()) 
+end 
+
+function best (n, precision) 
+   if n==0 then
+      return "0"
+   else 
+      precision = precision or 5
+      magnitude = math.floor(math.log10(math.abs(n)))+1
+      shift     = 10^(precision - magnitude)  
+      result    = math.floor( n*shift +0.5) / shift
+      return magnitude>precision and string.format("%.f", result) 
+             or 
+             magnitude<1 and string.format("%."..tonumber(precision-magnitude).."f", result) 
+             or
+             result
+   end
+end
 
 help={}
 help[1]="gumsolver -- resolving equations by propagation of uncertainties"
@@ -53,50 +76,69 @@ end
 function process_line (c, input)   
    local name=extract_name(input)
    local expr=extract_expr(input)
-   local name=input:match("%s*([%a][%w%.]*)%s*=?")
-   local expr=input:match(".*=%s*(.*)%s*$")
    if c[name] then
          if c[expr] then
             if DEBUG then print2stderr (name, ":", expr) end
             pipe(c[name],c[expr])
          elseif expr then
-            if DEBUG then print2stderr (name, ":", expr) end
-            run (c, c[name], vreader(expr))
+            if string.find (expr, "[%a*/%(%)]") then
+               if DEBUG then print2stderr (name, ":=", expr) end
+               process_formula (c, input)
+            else
+               local val, err, relflag = vreader(expr) --vreader does not check percent
+               if DEBUG then print2stderr (name, ":", val.." ± "..err..relflag) end
+               run (c, c[name], val, not relflag and err, relflag and err/100)
+            end
          else
             if DEBUG then print2stderr (name, ":", "?") end
             run (c, c[name])
          end
    else 
       if expr then
-         if DEBUG then print2stderr (name, ":", expr) end
-         probe (name, process_formula (c, input))
+         if DEBUG then print2stderr (name, ":=", expr) end
+         process_formula (c, input)
       else
          if DEBUG then print2stderr (name, ":", "?") end
          c[name]=make_connector("")
-         probe (name, c[name])
       end
+      probe (name, c[name])
    end 
 end
 
 
-function dump_connectors() 
-   function short (table)
-   return string.gsub (tostring(table),"table: ","")
-   end
+function dump_connectors(CONNECTORS) 
 
-   for k,v in pairs (CONNECTORS) do 
-      value=(v.get())
+   local tablestack={}
+   
+   local function short (t)
+      local key = table.find (tablestack, t)
+      if key then
+         return key 
+      else
+         table.insert (tablestack, t)
+         return #tablestack
+      end
+   end
+  
+   local keys={}
+   for k,v in pairs(CONNECTORS) do table.insert(keys, k) end
+   if not DEBUG then table.sort(keys) end
+   for i,key in pairs (keys) do 
+      local v = CONNECTORS[key]
       informant=(v.value())
       ltable=(v.listeners())
       if DEBUG then 
          io.write (short(v), "\t") 
          for k,l in pairs(ltable) do io.write (informant == l and "!" or "", short(l)," ") end 
+         -- TODO: Better print into string and adjust length 
+         if #ltable < 3 or #ltable == 3 and not table.find (ltable, informant) then io.write ("\t") end
+         if #ltable < 5 then io.write ("\t") end
          io.write ("\t") 
       end    
-      print (k, 
+      print (key .. (string.len(key) < 8 and "\t" or ""), 
              (v.info()) or "", 
              informant == 1 and "user" or "",
-             informant and RELATIVE and value.rel() or informant and value.abs() or "")
+             informant and PRINT(v.get()) or "")
    end
 end
 
@@ -116,7 +158,7 @@ else
       if line:find("^!P") then print (line:match("^!PR?I?N?T? (.*)$") or "") ; line="" end
       if line:find("^!R") then RELATIVE=not nil ; line="" end
       if line:find("^!A") then RELATIVE=nil     ; line="" end
-      if line:find("^!D.*") then dump_connectors(); line="" end
+      if line:find("^!D.*") then dump_connectors(CONNECTORS); line="" end
       line = line:find("#") and line:match("([^#]*)#.*$") or line
       if line:len() > 0 then process_line (CONNECTORS, line) end
       if PROMPT then io.write(PROMPT) end 

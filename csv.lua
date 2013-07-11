@@ -24,12 +24,9 @@ function csv_read(separator)
 end
 
 function try_tonumber (s)
-   if string.find(s,"^%s*%.%s*$") then
-      return nil
-   else
-      local n = tonumber(s) 
-      return n or s
-   end
+   if string.find(s,"^%s*$")      then return nil end  	-- empty cell
+   if string.find(s,"^%s*%.%s*$") then return nil end  	-- missing value
+   return tonumber(s) or s			    	-- number or symbol
 end
 
 

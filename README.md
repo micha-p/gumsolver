@@ -14,7 +14,12 @@ rlwrap ./gumsolver -i
 
 ## Syntax
 
-Names of variables are case-sensitive and have to start with an upper- or lowercase letter, followed by any unlimited number of letters as well as numbers and dots. Locale settings are taken into account. Underscores or carets or dashes are not allowed, as they might interfere with math notation. Spacing between tokens within lines is ignored. Any linebreak will trigger evaluations.
+Symbols are case-sensitive and might contain at least one letter as well as digits or dots without any limits in length. 
+These dots divide symbol names into segments, which allow for simple object-oriented prototype-based inheritance. Underscores or carets or dashes are not allowed, as they might interfere too easily with math notation. 
+
+Settings for local internalization are taken into account execpt for the decimal separator, which is always a decimal point. Numbers are read as decimals and might contain underscores at arbitrary locations to separate between parts of different magnitude. 
+
+Spacing between tokens within lines is skipped and any linebreak will trigger evaluations.
 
 Notation of uncertainties:  
 v+-u &emsp; v±u &emsp; v+-u% &emsp; v±u%
@@ -44,7 +49,8 @@ It is possible to submit special directives following an exclamation mark. Usuan
 	!DUMP 	   Show content of network
 	!PRINT	   Send the rest of the line to standard output
 	!ABSOLUTE  Switch to display absolute uncertainties (default)
-	!RELATIVE  Switch to display relative uncertainties  
+	!RELATIVE  Switch to display relative uncertainties
+	!CLONE     Clones given name from constraint with one segment less. Kind of object-oriented inheritance (TODO)
 	!INCLUDE   Literal inclusion of the specified file (TODO)
 	!QUIT	   Stop processing regardless of any following content
 

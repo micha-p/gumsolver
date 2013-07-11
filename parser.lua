@@ -1,4 +1,6 @@
-NAMEPATTERN="[%a][%w%.]*"
+NAMEPATTERN   = "%w*%a[%w%.]*"
+NUMBERPATTERN = "-?[%d._]+"
+
 
 function extract_name (s)
 return s:match("%s*("..NAMEPATTERN..")%s*=?")
@@ -8,12 +10,17 @@ function extract_expr (s)
 return s:match(".*=%s*(.*)%s*$")
 end 
 
+function extract_number (s)
+return s and assert(tonumber(s:gsub("_",""),10), "Error while converting to number: " .. s)
+end 
+
 
 function parse (str) 
    local function expression (str, pos, len, level)
       local e={}
       local i=1
-      local function check_pattern (pattern)
+
+      function check_pattern (pattern)
          if pos > len then 
             return nil
          else
@@ -22,38 +29,35 @@ function parse (str)
             return m
          end
       end
-      local function skip_space() return check_pattern ("%s*") end
-      local function variable() return check_pattern (NAMEPATTERN) end  
-      local function opening() return check_pattern ("%(") end  
-      local function closing() return check_pattern ("%)") end  
-      local function number() 
-         local m = check_pattern ("-?[%d._]+") 
-         return m and assert(tonumber(m:gsub("_",""),10), "Error while converting to number: " .. m or "nil")
-      end
-      local function subexpression()
-         local m = opening () 
-         if m then 
+
+      function skipspace() return check_pattern ("%s*") end
+      function opening()   return check_pattern ("%(") end  
+      function closing()   return check_pattern ("%)") end  
+      function operator()  return check_pattern ("[%+%-%*%/]") end  
+      function variable()  return check_pattern (NAMEPATTERN) end  
+      function number()    return extract_number( check_pattern (NUMBERPATTERN)) end 
+      function operand()   return variable() or number() or subexpression() or nil end
+      function subexpression()
+         if opening() then 
             s, newpos = expression (str, pos, len, level+1)
-            pos=newpos
+            pos = newpos
          end
          return s
       end
-      local function operator() return check_pattern ("[%+%-%*%/]") end  
-      local function operand() return variable() or number() or subexpression() or nil end
    
-      skip_space()
+      skipspace()
       e[i]=operand()
-      skip_space()
+      skipspace()
       for a in operator do
          i=i+1
          e[i]=a
-         skip_space()
+         skipspace()
          i=i+1
          e[i]=operand()
-         skip_space()
+         skipspace()
       end
-      if level>1 and not closing() then error("closing bracket missing before end") end
-      if level==1 and closing() then error("too many closing brackets") end
+      if level>1 and not closing() then error("closing bracket missing before end: "..str) end
+      if level==1 and closing() then error("too many closing brackets: "..str) end
       return #e==1 and e[1] or e , pos
    end
    return expression (str,1, #str,1)
@@ -115,8 +119,10 @@ display (order (parse "10"))
 display (parse "area")
 display (parse "1_000_000")
 
-display (parse "C * 9 / 5 + 32")
-display (order (parse "C * 9 / 5  + 32"))
-display (order (parse "C * (9 / 5 ) + 32"))
-display (order (parse "( (9 / 5 ) * C ) + 32"))
+display (parse "Ca * 9 / 5 + 32")
+display (order (parse "Cb * 9 / 5  + 32"))
+display (parse "Cc * (9 / 5 ) + 32")
+display (order (parse "Cc * (9 / 5 ) + 32"))
+display (parse "( (9 / 5 ) * Cd ) + 32")
+display (order (parse "( (9 / 5 ) * Cd ) + 32"))
 ]]

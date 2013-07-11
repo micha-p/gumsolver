@@ -4,8 +4,9 @@ dofile ("csv.lua")
 dofile ("parser.lua")
 
 init_algebra (vadd,vsub,vmul,vdiv)
-init_print   (function (v)   return v.abs () end) 
-init_equal   (function (a,b) return a.v == b.v and a.D2 == b.D2 end) 
+
+PRINT = function (v)   return v.abs() end
+EQUAL = function (a,b) return a.v == b.v and a.D2 == b.D2 end 
 
 
 function run (connectortable, connector, val , abs , rel) 
@@ -38,7 +39,7 @@ function process_formula(c, formula)
           or
           stringtest(node) and process_column(c, node)
           or
-          numbertest(node) and cv(vnew(node))
+          numbertest(node) and cv(vnew(node)) -- constant value without uncertainty
           or
           tabletest(node) and apply (eval(node[1]),node[2],eval(node[3])) 
           or

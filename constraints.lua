@@ -8,9 +8,12 @@ end
 
 -------------------------------------------------------------------------
 -------------------------------------------------------------------------
-
+--
 -- constraints, probes and pipes are all actors, which understand the signals "new" and "lost"
 -- while creation they attach themselve to the given connectors
+
+PRINT = function (a) return a end
+EQUAL = function (a,b) return a == b end
 
 function make_actor (process_new_value, process_forget_value)  
   local me = {}
@@ -63,9 +66,9 @@ end
 function probe (name, connector)
   local me = {}
   local printprobe = function (value)
-    print (name, " = ", value)
+    print (name, " -> ", value)
   end
-  me = make_actor (function () printprobe (genout (connector.get())) end, function () printprobe ("?") end)
+  me = make_actor (function () printprobe (PRINT (connector.get())) end, function () printprobe ("?") end)
   connector.connect(me)
   return me
 end
@@ -83,7 +86,7 @@ function make_connector(hint)
       value = newval
       informant = setter
       table.foreach (actors, function (k, v) if v ~= setter then v.new() end end)
-    elseif not geneqv (value, newval) then print ("Contradiction" , genout (value) , genout (newval))
+    elseif not EQUAL (value, newval) then print ("Contradiction" , PRINT (value) , PRINT (newval))
     end
   end
 
@@ -95,7 +98,7 @@ function make_connector(hint)
   end
   
   local connect_actor = function (new_constraint)
-    if not table.find (actors, new_constraint) then table.insert (actors, new_constraint) end
+    if not table.find (actors, new_constraint) then table.insert (actors, 1, new_constraint) end
     if informant then new_constraint.new() end
   end
 
@@ -118,16 +121,6 @@ gensub = nil
 genmul = nil
 gendiv = nil
 genset = nil
-genout = function (a) return a end
-geneqv = function (a,b) return a == b end
-
-function init_print (func)
-  genout = func
-end
-
-function init_equal (func)
-  geneqv = func
-end
 
 function init_algebra (add, sub, mul, div)
   genadd = function (a1, a2, sum)  constraint(a1,a2,sum , add, sub) end
