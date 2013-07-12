@@ -57,6 +57,7 @@ function process_formula(c,cs,formula)
    end
 
    local function eval(node,hint)
+   print ("EVAL:", node, c[node])
    return stringtest(node) and c[node]
           or
           stringtest(node) and process_column(c, node)
@@ -68,7 +69,7 @@ function process_formula(c,cs,formula)
           error ("Can't resolve expression: "..node)
    end 
 
-   name=extract_name(formula)
+   name=extract_name(formula) -- name is already known and inserted in all cases?
    expr=extract_expr(formula)
    c[name]=eval(order(parse(expr)))
 return c[name]

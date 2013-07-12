@@ -6,9 +6,7 @@ function process_record (c, rec)
 end
 
 function process_column(c, colname)
-   print("COLUMNS:",colname)
    local function new()
-      print("NEW:",colname)
       c[colname]=make_connector(colname)
       return c[colname]
    end

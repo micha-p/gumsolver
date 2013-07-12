@@ -74,6 +74,10 @@ end
 function process_line (c, input)   
    local name=extract_name(input)
    local expr=extract_expr(input)
+   -- TODO
+   -- there is a major problem here
+   -- a known name ( c[name] not equal nil) should not prevent any new constraints
+   -- therefore it is neccessary to distinguishes between setting of new values or submitting new constraints
    if c[name] then
          if c[expr] then
             if DEBUG then print2stderr (name, ":", expr) end
@@ -82,11 +86,13 @@ function process_line (c, input)
             if string.find (expr, "[%a*/%(%)]") then
                if DEBUG then print2stderr (name, ":=", expr) end
                process_formula (c, CONNECTORS_TO_CONSTRAINTS, input)
-            else
+            elseif string.match (expr, "^[%s%d%.%_%±%+%-]*$") then
                local val
                val = vreader(expr)
                if DEBUG then print2stderr (name, ":", RELATIVE and val.rel() or val.abs()) end
                run (c, c[name], val, not relflag and err, relflag and err/100)
+            else
+               error ("Can't distinguish between formula or value: "..expr)
             end
          else
             if DEBUG then print2stderr (name, ":", "?") end
