@@ -26,6 +26,7 @@ end
 
 function pipe (a, b)  
   local me = {}
+  local actors = {a,b}
   local function process_new_value ()
     if     a.value() then b.set (me, a.get()) 
     elseif b.value() then a.set (me, b.get()) 
@@ -37,6 +38,7 @@ function pipe (a, b)
     process_new_value()
   end
   me = make_actor (process_new_value, process_forget_value) 
+  me["setters"]  = function () return actors end
   me["class"]  = "pipe"
   a.connect(me)
   b.connect(me)

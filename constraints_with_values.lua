@@ -45,11 +45,17 @@ function process_formula(c,cs,formula)
           or
           infix=="/" and cdiv (cs, op1, op2, infix)
    end
-
-   local function eval(node,hint)
+   
+   local function newcon(name)
+      con= process_column(c, name) 
+      CONNECTORS[name.."!"] = probe (name, con)
+   return con 
+   end
+   
+   local function eval(node)
    return stringtest(node) and c[node]
           or
-          stringtest(node) and process_column(c, node)
+          stringtest(node) and newcon(node) -- unknown symbol
           or
           numbertest(node) and cv(cs, vnew(node), node) -- constant value without uncertainty
           or
@@ -60,8 +66,8 @@ function process_formula(c,cs,formula)
 
    name=extract_name(formula) -- name is already known and inserted in all cases?
    expr=extract_expr(formula)
-   c[name]=eval(order(parse(expr)))
-return c[name]
+   if not c[name] then error ("name on left side is unknown: "..name) end
+return eval(order(parse(expr)))
 end
     
 

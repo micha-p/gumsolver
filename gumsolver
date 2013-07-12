@@ -76,10 +76,12 @@ function process_line (c, input)
    local expr=extract_expr(input)
    -- a known name ( c[name] not equal nil) should not prevent any new constraints
    -- therefore it is neccessary to distinguishes between setting of new values or submitting new constraints
+   -- moreover, this entry and ist listeners should not be overwritten
+   if not name then error ("No name found for left-side: "..input) end
    if c[name] then
          if c[expr] then
-            if DEBUG then print2stderr (name, ":", expr) end
-            pipe(c[name],c[expr])
+            if DEBUG then print2stderr (name, "|", expr) end
+            CONSTRAINTS[name.."|"..expr]=pipe(c[name],c[expr])
          elseif expr then
             if string.find (expr, "[%a*/%(%)]") then
                if DEBUG then print2stderr (name, ":=", expr) end
@@ -97,15 +99,18 @@ function process_line (c, input)
             run (c, c[name])
          end
    else 
+      c[name]=make_connector(name)
       if expr then
          if DEBUG then print2stderr (name, ":=", expr) end
          process_formula (c, CONNECTORS_TO_CONSTRAINTS, input)
       else
          if DEBUG then print2stderr (name, ":", "?") end
-         c[name]=make_connector(name)
       end
-      probe (name, c[name])
    end 
+   if not c[name] then error ("Missing entry for: "..name) end
+   if not CONNECTORS[name.."!"] then 
+      CONNECTORS[name.."!"] = probe (name, c[name]) -- to ensure attachment of probe      
+   end
 end
 
 
