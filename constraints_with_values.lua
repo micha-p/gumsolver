@@ -4,27 +4,17 @@ dofile ("csv.lua")
 dofile ("parser.lua")
 
 -- OVERLOAD!!
-function cadd (c,x,y,h) local z = make_connector(h); table.insert (c,z); genadd (x,y,z) return z end
-function csub (c,x,y,h) local z = make_connector(h); table.insert (c,z); gensub (x,y,z) return z end
-function cmul (c,x,y,h) local z = make_connector(h); table.insert (c,z); genmul (x,y,z) return z end
-function cdiv (c,x,y,h) local z = make_connector(h); table.insert (c,z); gendiv (x,y,z) return z end
-function cv   (c,x  ,h) local z = make_connector(h); table.insert (c,z); genset (x,  z) return z end
-function init_algebra (add, sub, mul, div)
-  genadd = function (a1, a2, sum)  z=constraint(a1,a2,sum , add, sub,"+") table.insert (CONSTRAINTS,z); return z end
-  gensub = function (a1, a2, diff) z=constraint(a1,a2,diff, sub, add,"-") table.insert (CONSTRAINTS,z); return z end
-  genmul = function (m1, m2, prod) z=constraint(m1,m2,prod, mul, div,"*") table.insert (CONSTRAINTS,z); return z end
-  gendiv = function (a1, a2, sum)  z=constraint(a1,a2,sum , div, mul,"/") table.insert (CONSTRAINTS,z); return z end
-  genset = function (value, connector) 
-    local me = {}
-    me = make_actor () 
-    connector.connect(me)
-    connector.set(me, value)
-    return me
-  end
-end
+genadd = function (a1, a2, sum)  z=constraint(a1,a2,sum , vadd, vsub,"+") table.insert (CONSTRAINTS,z); return z end
+gensub = function (a1, a2, diff) z=constraint(a1,a2,diff, vsub, vadd,"-") table.insert (CONSTRAINTS,z); return z end
+genmul = function (m1, m2, prod) z=constraint(m1,m2,prod, vmul, vdiv,"*") table.insert (CONSTRAINTS,z); return z end
+gendiv = function (a1, a2, sum)  z=constraint(a1,a2,sum , vdiv, vmul,"/") table.insert (CONSTRAINTS,z); return z end
+genset = function (v, con)       z=constant (con,v)                       table.insert (CONSTRAINTS,z); return z end 
+cadd   = function (c,x,y,h) local z = make_connector(h); table.insert (c,z); genadd (x,y,z) return z end
+csub   = function (c,x,y,h) local z = make_connector(h); table.insert (c,z); gensub (x,y,z) return z end
+cmul   = function (c,x,y,h) local z = make_connector(h); table.insert (c,z); genmul (x,y,z) return z end
+cdiv   = function (c,x,y,h) local z = make_connector(h); table.insert (c,z); gendiv (x,y,z) return z end
+cv     = function (c,x  ,h) local z = make_connector(h); table.insert (c,z); genset (x,  z) return z end
 -- END OVERLOAD
-
-init_algebra (vadd,vsub,vmul,vdiv)
 
 PRINT = function (v)   return v.abs() end
 EQUAL = function (a,b) return a.v == b.v and a.D2 == b.D2 end 
@@ -47,17 +37,16 @@ end
 function process_formula(c,cs,formula)
 
    local function apply (op1, infix, op2)
-   return infix=="+" and cadd (cs, op1, op2, name)
+   return infix=="+" and cadd (cs, op1, op2, infix)
           or
-          infix=="-" and csub (cs, op1, op2, name)
+          infix=="-" and csub (cs, op1, op2, infix)
           or
-          infix=="*" and cmul (cs, op1, op2, name)
+          infix=="*" and cmul (cs, op1, op2, infix)
           or
-          infix=="/" and cdiv (cs, op1, op2, name)
+          infix=="/" and cdiv (cs, op1, op2, infix)
    end
 
    local function eval(node,hint)
-   print ("EVAL:", node, c[node])
    return stringtest(node) and c[node]
           or
           stringtest(node) and process_column(c, node)

@@ -46,14 +46,15 @@ The order of precedence is as usual and can be modified by brackets.
 Comments start with a hash-sign and last until end of line.
 It is possible to submit special directives following an exclamation mark. Usuanlly, the first letter is distinctive
 
-	!DUMP 	   Show content of network
-	!PRINT	   Send the rest of the line to standard output
 	!ABSOLUTE  Switch to display absolute uncertainties (default)
 	!RELATIVE  Switch to display relative uncertainties
-	!CLONE     Clones given name from constraint with one segment less. Prototype-based inheritance (TODO)
 	!INCLUDE   Literal inclusion of the specified file (TODO)
+	!PRINT	   Send the rest of the line to standard output
+	!DUMP 	   Show content of network
+	!CLONE     Clones given name from constraint with one segment less. Prototype-based inheritance (TODO)
 	!TRACE 	   Trigger tracing on/ off (TODO)
-    	!SKIP      Skip lines until next directive (TODO)
+    	!SAVE      Save onto stack (TODO)
+    	!LOAD      Load from stack (TODO)
 	!QUIT	   Stop processing regardless of any following content
 
 ## Present Limitations

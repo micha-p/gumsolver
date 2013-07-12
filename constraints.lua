@@ -9,15 +9,15 @@ end
 -------------------------------------------------------------------------
 -------------------------------------------------------------------------
 --
--- constraints, probes and pipes are all actors, which understand the signals "new" and "lost"
+-- constraints, probes and pipes are all actors, which only understand the signals "new" and "lost"
 -- while creation they attach themselve to the given connectors
 
 PRINT = function (a) return a end
 EQUAL = function (a,b) return a == b end
 
-function make_actor (process_new_value, process_forget_value, c, h)  
+function make_actor (process_new_value, process_forget_value, h)  
   local me = {}
-  me.class = function () return c end
+  me["class"]  = "actor"
   me.info  = function () return h end
   me.new   = function () process_new_value() end
   me.lost  = function () process_forget_value() end
@@ -36,7 +36,8 @@ function pipe (a, b)
     b.forget(me)
     process_new_value()
   end
-  me = make_actor (process_new_value, process_forget_value,"pipe") 
+  me = make_actor (process_new_value, process_forget_value) 
+  me["class"]  = "pipe"
   a.connect(me)
   b.connect(me)
   return me
@@ -45,6 +46,7 @@ end
 
 function constraint (a, b, c, forward , back,hint)  
   local me = {}
+  local actors = {a,b,c}
   local function process_new_value ()
     if     a.value() and b.value()then c.set(me, forward (a.get(), b.get())) 
     elseif a.value() and c.value()then b.set(me, back    (c.get(), a.get())) 
@@ -57,12 +59,26 @@ function constraint (a, b, c, forward , back,hint)
     c.forget(me)
     process_new_value()
   end
-  me = make_actor (process_new_value, process_forget_value,"constr",hint) 
+  me = make_actor (process_new_value, process_forget_value,hint) 
+  me["setters"]  = function () return actors end
+  me["class"]  = "equation"
   a.connect(me)
   b.connect(me)
   c.connect(me)
   return me
 end
+
+function constant (connector, value)
+   local me = {}
+   local actors = {connector}
+   me = make_actor () 
+   me["class"]  = "value"
+   me["setters"]  = function () return actors end
+   connector.connect(me)
+   connector.set(me, value)
+return me
+end
+
 
 
 function probe (name, connector)
@@ -70,7 +86,8 @@ function probe (name, connector)
   local printprobe = function (value)
     print (name, " -> ", value)
   end
-  me = make_actor (function () printprobe (PRINT (connector.get())) end, function () printprobe ("?") end,"probe")
+  me = make_actor (function () printprobe (PRINT (connector.get())) end, function () printprobe ("?") end,name)
+  me["class"]  = "probe"
   connector.connect(me)
   return me
 end
@@ -104,7 +121,7 @@ function make_connector(hint)
     if informant then new_constraint.new() end
   end
 
-  me.class    	= function () return "connect" end
+  me["class"]  = "connector"
   me.info    	= function () return info end
   me.listeners  = function () return actors end
   me.value 	= function () return informant end
@@ -130,13 +147,7 @@ function init_algebra (add, sub, mul, div)
   gensub = function (a1, a2, diff) constraint(a1,a2,diff, sub, add) end
   genmul = function (m1, m2, prod) constraint(m1,m2,prod, mul, div) end
   gendiv = function (a1, a2, sum)  constraint(a1,a2,sum , div, mul) end
-  genset = function (value, connector) 
-    local me = {}
-    me = make_actor () 
-    connector.connect(me)
-    connector.set(me, value)
-    return me
-  end
+  genset = function (v, con)       constant (con,v)                 end 
 end
 
 function cadd (x,y) local z = make_connector(); genadd (x,y,z) return z end
