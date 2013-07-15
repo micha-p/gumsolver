@@ -10,7 +10,7 @@ area=w*h
 
 
 w=1.5+-5% 	# value with uncertainty [m]
-h=1		# exact value [m]
+h=1.1		# exact value [m]
 # now surface area is calculated
 
 
@@ -22,11 +22,11 @@ h=1		# exact value [m]
 !P ---------2------------------
 h
 !P ---------3------------------
-area=1
+area=3
 
 
 
-# Of course we have to move this part, so we want to know its weight
+# Of course we have to move this furniture, so we want to know its weight
 mass
 volume = area * d
 density = mass / volume

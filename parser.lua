@@ -16,10 +16,11 @@ end
 
 
 function parse (str) 
+   
    local function expression (str, pos, len, level)
       local e={}
       local i=1
-
+      
       function check_pattern (pattern)
          if pos > len then 
             return nil

@@ -56,6 +56,15 @@ It is possible to submit special directives following an exclamation mark. Usuan
     	!SAVE      Save onto stack (TODO)
     	!LOAD      Load from stack (TODO)
 	!QUIT	   Stop processing regardless of any following content
+	
+	
+## Theory
+
+There are two main types of objects: Connectors keep the values, a list of listeners and basically understand two signals for setting their values. Whenever they get such a signal from any informant, they inform all listeners except the informer whether they got a new value or they lost their value.
+
+Constraints understand these changes, ask for values, compute new ones, and propagate them to another connector. Probes are derived from constraints and just communicate with the user. 
+
+The right part of any given equation is parsed into smaller expressions, which are converted to a connector attached to a constraint, which in turn is attaches itself to it's operands (other connectors or constants) during creation. In most cases, the symbol on the left part is an already known connector and therefore connected to the connector resulting from the expression via a unary constraint acting as a bidirectional pipe. 
 
 ## Present Limitations
 

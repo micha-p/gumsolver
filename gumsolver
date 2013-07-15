@@ -69,47 +69,51 @@ while arg[1] do
    table.remove(arg,1)
 end
 
-
+function ensure_symbol_and_probe(name)
+   if not CONNECTORS[name] then 
+      if DEBUG then print2stderr (name, "!", "") end
+      CONNECTORS[name]=make_connector(name)
+   end
+   if not CONSTRAINTS[name] then 
+      if TABLE then
+         if DEBUG then PROBES[name] = probe2stderr (name, CONNECTORS[name]) end
+      else
+         PROBES[name] = probe (name, CONNECTORS[name]) 
+      end
+   end
+return CONNECTORS[name]
+end
 
 function process_line (c, input)   
    local name=extract_name(input)
    local expr=extract_expr(input)
    -- a known name ( c[name] not equal nil) should not prevent any new constraints
-   -- therefore it is neccessary to distinguishes between setting of new values or submitting new constraints
-   -- moreover, this entry and ist listeners should not be overwritten
+   -- therefore it is neccessary to distinguish between setting of new values or submitting new constraints
+   -- moreover, the left side should not be overwritten
+
    if not name then error ("No name found for left-side: "..input) end
-   if c[name] then
-         if c[expr] then
-            if DEBUG then print2stderr (name, "|", expr) end
-            CONSTRAINTS[name.."|"..expr]=pipe(c[name],c[expr])
-         elseif expr then
-            if string.find (expr, "[%a*/%(%)]") then
-               if DEBUG then print2stderr (name, ":=", expr) end
-               process_formula (c, CONNECTORS_TO_CONSTRAINTS, input)
-            elseif string.match (expr, "^[%s%d%.%_%±%+%-%%]*$") then
-               local val
-               val = vreader(expr)
-               if DEBUG then print2stderr (name, ":", RELATIVE and val.rel() or val.abs()) end
-               run (c, c[name], val, not relflag and err, relflag and err/100)
-            else
-               error ("Can't distinguish between formula or value: "..expr)
-            end
-         else
-            if DEBUG then print2stderr (name, ":", "?") end
-            run (c, c[name])
-         end
-   else 
-      c[name]=make_connector(name)
-      if expr then
+   
+   -- a) ensure connector and probe for left-sided name
+   ensure_symbol_and_probe(name)
+
+   -- b) process right side
+
+   if expr then
+      if string.find (expr, "[%a*/%(%)]") then
          if DEBUG then print2stderr (name, ":=", expr) end
-         process_formula (c, CONNECTORS_TO_CONSTRAINTS, input)
-      else
-         if DEBUG then print2stderr (name, ":", "?") end
-      end
-   end 
-   if not c[name] then error ("Missing entry for: "..name) end
-   if not CONNECTORS[name.."!"] then 
-      CONNECTORS[name.."!"] = probe (name, c[name]) -- to ensure attachment of probe      
+         local e = process_expr (expr)
+         CONSTRAINTS[name.."="]=pipe(c[name],e)
+      elseif string.match (expr, "^[%s%d%.%_%±%+%-%%]*$") then
+         local val
+         val = vreader(expr)
+         if DEBUG then print2stderr (name, ":", RELATIVE and val.rel() or val.abs()) end
+            run (c, c[name], val, not relflag and err, relflag and err/100)
+         else
+            error ("Can't distinguish between formula or value: "..expr)
+         end
+   else
+      if DEBUG then print2stderr (name, ":", "?") end
+      run (c, c[name])
    end
 end
 

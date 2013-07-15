@@ -63,7 +63,7 @@ function constraint (a, b, c, forward , back,hint)
   end
   me = make_actor (process_new_value, process_forget_value,hint) 
   me["setters"]  = function () return actors end
-  me["class"]  = "equation"
+  me["class"]  = "expression"
   a.connect(me)
   b.connect(me)
   c.connect(me)
@@ -81,17 +81,17 @@ function constant (connector, value)
 return me
 end
 
-
-
 function probe (name, connector)
-  local me = {}
-  local printprobe = function (value)
-    print (name, " -> ", value)
-  end
-  me = make_actor (function () printprobe (PRINT (connector.get())) end, function () printprobe ("?") end,name)
-  me["class"]  = "probe"
-  connector.connect(me)
-  return me
+   local me = {}
+   local actors = {connector}
+   local printprobe = function (value)
+      print (name, " -> ", value)
+   end
+   me = make_actor (function () printprobe (PRINT (connector.get())) end, function () printprobe ("?") end,name)
+   me["class"]  = "probe"
+   me["setters"]  = function () return actors end
+   connector.connect(me)
+   return me
 end
 
 
