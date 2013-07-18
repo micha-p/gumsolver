@@ -21,12 +21,12 @@ return colname:match("%+%-$")
        new(colname)
 end
 
-function print_result (c, colnames) 
+function print_result (colnames) 
    local con,value,check
    local r={}
    for k,v in ipairs(colnames) do 
-      con=c[v]
-      gen=c[v:match("(.*)%+%-$") or v:match("(.*)±$") or v:match("(.*)%%$")]
+      con=CONNECTORS[v]
+      gen=CONNECTORS[v:match("(.*)%+%-$") or v:match("(.*)±$") or v:match("(.*)%%$")]
       r[k] = con and con.value() and best(con.get()["v"],4)
              or 
              gen and gen.value() and v:find("%%$") and best(math.sqrt(gen.get()["d2"])*100,2) 
@@ -54,7 +54,7 @@ function process_table(c, DELIMITER)
    print(unpack(header))
    for line, record in ipairs(records) do 
       process_record (c, record)
-      r= print_result(c, colnames)
+      r= print_result(colnames)
       print(unpack(r))
    end
 end

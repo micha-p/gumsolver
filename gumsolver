@@ -1,64 +1,54 @@
 #! /usr/bin/lua
 
-dofile ("display.lua")
-dofile ("constraints_with_values.lua")
+dofile ("csv.lua")
 dofile ("table-mode.lua")
 dofile ("debug.lua")
+dofile ("expressions.lua")
 
-VERSION = "1.0"
-SCRIPT=string.match(arg[0],"[^%w%-]*([%w%-]*)$")
+VERSION = "0.1.0"
+SCRIPT=arg and string.match(arg[0],"[^%w%-]*([%w%-]*)$")
 TABLE=nil 
 PROMPT=nil
 RELATIVE=nil
 DELIMITER=","
-EQUAL = function (a,b) return a.v == b.v and a.D2 == b.D2 end 
-PRINT = function (r)
-   local rel  = function () return best(100 * math.sqrt(r.d2),2) .. "%" end
-   local abs  = function () return best(math.sqrt(r.D2),3) end
- return best(r.v,4) ..  " ± " .. (RELATIVE and rel() or abs ()) 
-end 
+RECORD=nil
+DEBUG=nil
+CONNECTORS={}    		-- name: connector (explicitly defined) 
+SUBEXPRESSIONS={} 	        -- connectors of subexpressions 
+CONSTRAINTS={}   		-- hint or number : constraint 
+PROBES={}
+RECORDS={}			-- number : record
+DEFINITIONS={}			-- number : string
+COLNAMES={}			-- number : string
 
-function best (n, precision) 
-   if n==0 then
-      return "0"
-   else 
-      precision = precision or 5
-      magnitude = math.floor(math.log10(math.abs(n)))+1
-      shift     = 10^(precision - magnitude)  
-      result    = math.floor( n*shift +0.5) / shift
-      return magnitude>precision and string.format("%.f", result) 
-             or 
-             magnitude<1 and string.format("%."..tonumber(precision-magnitude).."f", result) 
-             or
-             result
-   end
-end
+cadd   = function (x,y) local z = make_connector("+"); table.insert(SUBEXPRESSIONS,z); c=SUM   (x,y,z); table.insert(CONSTRAINTS,c);return z end
+csub   = function (x,y) local z = make_connector("-"); table.insert(SUBEXPRESSIONS,z); c=DIFF  (x,y,z); table.insert(CONSTRAINTS,c);return z end
+cmul   = function (x,y) local z = make_connector("*"); table.insert(SUBEXPRESSIONS,z); c=PROD  (x,y,z); table.insert(CONSTRAINTS,c);return z end
+cdiv   = function (x,y) local z = make_connector("/"); table.insert(SUBEXPRESSIONS,z); c=RATIO (x,y,z); table.insert(CONSTRAINTS,c);return z end
+cval   = function (x  ) local z = make_connector("#"); table.insert(SUBEXPRESSIONS,z); z.set("constant", x); return z end
 
 help={}
-help[1]="gumsolver -- resolving equations by propagation of uncertainties"
-help[2]="usage:    gumsolver [options] [file]"
-help[3]="options:  -t             table mode"
-help[4]="          -d delimiter   column separator for table"
-help[5]="          -i             interactive (use readline wrapper)"
-help[6]="          -D             debug messages"
-help[7]="          -a             start displaying absolute uncertainties (default)"
-help[8]="          -r             start displaying relative uncertainties"
-help[9]="          -v             display version"
-help[10]="         -h             this help"
+help[ 1]="gumsolver -- resolving equations by propagation of uncertainties"
+help[ 2]="usage:    gumsolver [options] [file]"
+help[ 3]="options: -d delimiter   field separator for input"
+help[ 4]="         -a             start displaying absolute uncertainties (default)"
+help[ 5]="         -r             start displaying relative uncertainties"
+help[ 6]="         -D             debug messages"
+help[ 7]="         -T             read tables horizontally"
+help[ 8]="         -R             Restrict output to records"
+help[ 9]="         -i             interactive (use readline wrapper)"
+help[10]="         -v             display version"
+help[11]="         -h             this help"
 
-while arg[1] do
-   TABLE  = TABLE  or arg[1]=="-t"
-   PROMPT = PROMPT or arg[1]=="-i" and "> "
-   DEBUG  = DEBUG  or arg[1]=="-D"
+while arg and arg[1] do
+   TABLE    = TABLE    or arg[1]=="-T"
+   PROMPT   = PROMPT   or arg[1]=="-I" and "> "
+   DEBUG    = DEBUG    or arg[1]=="-D"
+   RECORD   = RECORD   or arg[1]=="-R"
+   RELATIVE = RELATIVE or arg[1]=="-r" or arg[1]=="-a" and nil
    if arg[1]=="-d" then 
       table.remove(arg,1)
       DELIMITER = ( arg[1]=="\\t" and "\t" or arg[1])
-   end
-   if arg[1]=="-r" then 
-      RELATIVE = not nil
-   end
-   if arg[1]=="-a" then 
-      RELATIVE = nil
    end
    if arg[1]=="-h" then 
       for k,v in ipairs (help) do print(v) end; return      
@@ -69,13 +59,13 @@ while arg[1] do
    table.remove(arg,1)
 end
 
-function ensure_symbol_and_probe(name)
+function ensure_symbol_and_probe(name, connector)
    if not CONNECTORS[name] then 
-      if DEBUG then print2stderr (name, "!", "") end
-      CONNECTORS[name]=make_connector(name)
+      if DEBUG then print2stderr (PRINT16 (name), "!") end
+      CONNECTORS[name]=connector or make_connector(name)
    end
-   if not CONSTRAINTS[name] then 
-      if TABLE then
+   if not PROBES[name] then 
+      if TABLE or RECORD then
          if DEBUG then PROBES[name] = probe2stderr (name, CONNECTORS[name]) end
       else
          PROBES[name] = probe (name, CONNECTORS[name]) 
@@ -83,37 +73,41 @@ function ensure_symbol_and_probe(name)
    end
 return CONNECTORS[name]
 end
-
-function process_line (c, input)   
+    
+function process_line (input)   
    local name=extract_name(input)
    local expr=extract_expr(input)
-   -- a known name ( c[name] not equal nil) should not prevent any new constraints
+   -- a known name should not create any new constraints
    -- therefore it is neccessary to distinguish between setting of new values or submitting new constraints
    -- moreover, the left side should not be overwritten
 
    if not name then error ("No name found for left-side: "..input) end
    
-   -- a) ensure connector and probe for left-sided name
-   ensure_symbol_and_probe(name)
-
-   -- b) process right side
-
    if expr then
-      if string.find (expr, "[%a*/%(%)]") then
-         if DEBUG then print2stderr (name, ":=", expr) end
-         local e = process_expr (expr)
-         CONSTRAINTS[name.."="]=pipe(c[name],e)
-      elseif string.match (expr, "^[%s%d%.%_%±%+%-%%]*$") then
+      if string.match (expr, NAMEPATTERN.."_[%d]+") then          --backreference
+         local entry  = string.match (expr, NAMEPATTERN) 
+         local recnum = tonumber(string.match (expr, "_([%d]+)")) 
+         local rec = assert (RECORDS[recnum], "Invalid record number: "..recnum)
+         run(CONNECTORS, ensure_symbol_and_probe(name), rec[entry])
+      elseif  string.find (expr, "[%a*/%(%)]") then               --expression
+         if DEBUG then print2stderr (name, expr.."!") end
+         DEFINITIONS[name]=expr
+         local e = EVAL(ensure_symbol_and_probe, order(parse(expr)))
+         if CONNECTORS[name] then
+            CONSTRAINTS[name.."="]=pipe(CONNECTORS[name],e,RET,RET)
+         else
+            ensure_symbol_and_probe(name, e)
+         end
+      elseif string.match (expr, "^[%s%d%.%_%±%+%-%%]*$") then    --value
          local val
          val = vreader(expr)
-         if DEBUG then print2stderr (name, ":", RELATIVE and val.rel() or val.abs()) end
-            run (c, c[name], val, not relflag and err, relflag and err/100)
-         else
-            error ("Can't distinguish between formula or value: "..expr)
-         end
+         if DEBUG then print2stderr (name, expr.." (user)") end
+         run (c, ensure_symbol_and_probe(name), val)
+      else
+         error ("Can't resolve right side: "..expr)
+      end
    else
-      if DEBUG then print2stderr (name, ":", "?") end
-      run (c, c[name])
+      run(CONNECTORS, CONNECTORS[name])
    end
 end
 
@@ -127,20 +121,46 @@ else
    for line in io.lines() do 
       line = line:match("%s*(.*)$")
       if line:find("^!Q") then break end
-      if line:find("^!P") then print (line:match("^!PR?I?N?T? (.*)$") or "") ; line="" end
+      if line:find("^!P") then 
+         if TABLE or RECORD then 
+            io.stderr:write (line:match("^!PR?I?N?T? (.*)$") or "","\n")
+         else
+            print (line:match("^!PR?I?N?T? (.*)$") or "")
+         end
+         line=""
+      end
       if line:find("^!R") then RELATIVE=not nil ; line="" end
       if line:find("^!A") then RELATIVE=nil     ; line="" end
-      if line:find("^!D.*") then dump_connectors(CONNECTORS); line="" end
+      if line:find("^!O") then record_connectors(); line="" end
+      if line:find("^!T") then tabulate_records(); line="" end
+      if line:find("^!D") then dump_connectors(); line="" end
       line = line:find("#") and line:match("([^#]*)#.*$") or line
-      if line:len() > 0 then process_line (CONNECTORS, line) end
+      if line:len() > 0 then process_line (line) end
       if PROMPT then io.write(PROMPT) end 
    end
    print()
 end
 
+--[[
+process_line ("F = ( (9 / 5 ) * C ) + 32")
+process_line ("K = C + 273.15")
+process_line ("R = 80 * (C / 100)")
 
 
-
+process_line ("C=25")
+process_line ("F=212")
+process_line ("C")
+process_line ("F=212")
+process_line ("F")
+process_line ("K=0")
+process_line ("K")
+process_line ("R=80")
+process_line ("R")
+process_line ("R=0")
+process_line ("R")
+process_line ("C=100") 
+dump_connectors()
+--]]
 
 
    

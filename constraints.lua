@@ -5,6 +5,7 @@ function table.find (t, value)
   return nil
 end
 
+TRACE=nil
 
 -------------------------------------------------------------------------
 -------------------------------------------------------------------------
@@ -12,6 +13,16 @@ end
 -- constraints, probes and pipes are all actors, which only understand the signals "new" and "lost"
 -- while creation they attach themselve to the given connectors
 
+
+ADD = function(a,b) return a+b  end 
+SUB = function(a,b) return a-b  end 
+MUL = function(a,b) return a*b  end 
+DIV = function(a,b) return a/b  end
+SQU = function(a)   return a^2  end
+SQR = function(a)   return a^.5 end
+RET = function(a)   return a    end
+
+PRINT16 = function (a) return a end
 PRINT = function (a) return a end
 EQUAL = function (a,b) return a == b end
 
@@ -24,50 +35,55 @@ function make_actor (process_new_value, process_forget_value, h)
   return me
 end
 
-function pipe (a, b)  
+function pipe (a, r, op1, op2)  
   local me = {}
   local actors = {a,b}
   local function process_new_value ()
-    if     a.value() then b.set (me, a.get()) 
-    elseif b.value() then a.set (me, b.get()) 
+    if     a.value() then r.set (me, op1 (a.get())) 
+    elseif r.value() then a.set (me, op2 (r.get())) 
     end
   end
   local function process_forget_value ()
     a.forget(me)
-    b.forget(me)
+    r.forget(me)
     process_new_value()
   end
   me = make_actor (process_new_value, process_forget_value) 
   me["setters"]  = function () return actors end
   me["class"]  = "pipe"
   a.connect(me)
-  b.connect(me)
+  r.connect(me)
   return me
 end
 
-
-function constraint (a, b, c, forward , back,hint)  
-  local me = {}
-  local actors = {a,b,c}
-  local function process_new_value ()
-    if     a.value() and b.value()then c.set(me, forward (a.get(), b.get())) 
-    elseif a.value() and c.value()then b.set(me, back    (c.get(), a.get())) 
-    elseif b.value() and c.value()then a.set(me, back    (c.get(), b.get())) 
-    end
-  end
-  local function process_forget_value ()
-    a.forget(me)
-    b.forget(me)
-    c.forget(me)
-    process_new_value()
-  end
-  me = make_actor (process_new_value, process_forget_value,hint) 
-  me["setters"]  = function () return actors end
-  me["class"]  = "expression"
-  a.connect(me)
-  b.connect(me)
-  c.connect(me)
-  return me
+function constraint (a, b, r, op1, op2, hint)  
+   local me = {}
+   local actors = {a,b,r}
+   local function process_new_value ()
+     if TRACE then print(short(me), "processing new", 
+                         short(a), short(b), short(r), 
+                         a.info(), b.info(), r.info(), 
+                         a.value() and a.get()["v"], b.value() and b.get()["v"], r.value() and r.get()["v"]) 
+     end
+     if     a.value() and b.value() and not r.value() then r.set(me, op1 (a.get(), b.get())) 
+     elseif r.value() and b.value() and not a.value() then a.set(me, op2 (r.get(), b.get())) 
+     elseif r.value() and a.value() and not b.value() then b.set(me, op2 (r.get(), a.get())) 
+     end
+   end
+   local function process_forget_value ()
+      if TRACE then print(short(me), "processing forget", short(a), short(b), short(r)) end
+      r.forget(me)
+      a.forget(me)
+      b.forget(me)
+      process_new_value()
+   end
+   me = make_actor (process_new_value, process_forget_value, hint) 
+   me["setters"]  = function () return actors end
+   me["class"]  = "expression"
+   a.connect(me)
+   b.connect(me)
+   r.connect(me)
+   return me
 end
 
 function constant (connector, value)
@@ -85,9 +101,13 @@ function probe (name, connector)
    local me = {}
    local actors = {connector}
    local printprobe = function (value)
-      print (name, " -> ", value)
+      if TRACE then
+         print (short(me), PRINT16 (name), value)
+      else         
+         print (PRINT16 (name), value)
+      end
    end
-   me = make_actor (function () printprobe (PRINT (connector.get())) end, function () printprobe ("?") end,name)
+   me = make_actor (function () printprobe (PRINT (connector.get())) end, function () printprobe (".") end,name)
    me["class"]  = "probe"
    me["setters"]  = function () return actors end
    connector.connect(me)
@@ -103,18 +123,25 @@ function make_connector(hint)
   local info = hint
 
   local set_my_value = function (setter, newval)
+    if TRACE then print (short(me), "SET from", tabletest(setter) and short(setter) or setter, newval.abs()) end
     if (not informant) then 
       value = newval
       informant = setter
-      table.foreach (actors, function (k, v) if v ~= setter then v.new() end end)
-    elseif not EQUAL (value, newval) then print ("Contradiction" , PRINT (value) , PRINT (newval))
+      for k,v in pairs (actors) do if v ~= setter then 
+         if TRACE then print(short(me), "informs", short(v), "about", value.abs(), "orig from", tabletest(setter) and short(setter) or setter) end
+         v.new () end end
+    else
+      if not EQUAL (value, newval) then print (PRINT16 ("CONTRADICTION!") , PRINT (value) , PRINT (newval), hint) end
     end
   end
 
   local forget_my_value = function (retractor)
+    if TRACE then print (short(me), "FORGET from", tabletest(retractor) and short(retractor) or retractor, retractor == "user" and "u" or retractor.info()) end
     if retractor == informant then
        informant = nil
-       table.foreach (actors, function (k, v) if v ~= retractor then v.lost() end end)
+       for k,v in pairs (actors) do if v ~= retractor then 
+       if TRACE then print(short(me), "informs", short(v), "about", "loss", "orig from", tabletest(retractor) and short(retractor) or retractor) end
+       v.lost() end end
     end
   end
   
@@ -138,51 +165,27 @@ end
 
 ---------------------------------------------------------------
 
-genadd = nil
-gensub = nil
-genmul = nil
-gendiv = nil
-genset = nil
+function cadd(x,y) local z=make_connector(); constraint(x, y, z, ADD, SUB); return z end
+function csub(x,y) local z=make_connector(); constraint(z, y, x, ADD, SUB); return z end
+function cmul(x,y) local z=make_connector(); constraint(x, y, z, MUL, DIV); return z end
+function cdiv(x,y) local z=make_connector(); constraint(z, y, x, MUL, DIV); return z end
+function csqu(x  ) local z=make_connector(); pipe      (x,    z, SQU, SQR); return z end 
+function csqr(x  ) local z=make_connector(); pipe      (x,    z, SQR, SQU); return z end 
+function cret(x  ) local z=make_connector(); pipe      (x,    z, RET, RET); return z end 
+function cval(v  ) local z=make_connector(); z.set("constant",v);           return z end 
 
-function init_algebra (add, sub, mul, div)
-  genadd = function (a1, a2, sum)  constraint(a1,a2,sum , add, sub) end
-  gensub = function (a1, a2, diff) constraint(a1,a2,diff, sub, add) end
-  genmul = function (m1, m2, prod) constraint(m1,m2,prod, mul, div) end
-  gendiv = function (a1, a2, sum)  constraint(a1,a2,sum , div, mul) end
-  genset = function (v, con)       constant (con,v)                 end 
-end
-
-function cadd (x,y) local z = make_connector(); genadd (x,y,z) return z end
-function csub (x,y) local z = make_connector(); gensub (x,y,z) return z end
-function cmul (x,y) local z = make_connector(); genmul (x,y,z) return z end
-function cdiv (x,y) local z = make_connector(); gendiv (x,y,z) return z end
-function cv   (x  ) local z = make_connector(); genset (x,  z) return z end
-
-
+function SUM   (x,y,s) return constraint(x, y, s, ADD, SUB); end
+function DIFF  (x,y,d) return SUM (y,d,x) end
+function PROD  (x,y,p) return constraint(x, y, p, MUL, DIV); end
+function RATIO (x,y,r) return PROD (y,r,x) end
 
 --[[
-init_algebra (function(a,b) return a+b end, 
-              function(a,b) return a-b end, 
-              function(a,b) return a*b end, 
-              function(a,b) return a/b end)
 
-a = make_connector()
-b = make_connector()
-c=cadd(a,b)
-
-probe("A",a)
-probe("B",b)
-probe("C",c)
-
-a.set(001, 2)
-b.set(001, 3)
-b.forget(001)
-c.set(001, 7)
 
 C = make_connector()
-F = cadd (cmul (cdiv(cv(9),cv(5)) , C) , cv(32) )
-K = csub (C, cv (-273.15))
-R = cmul (cv(80), cdiv (C, cv(100)))
+F = cadd (cmul (cdiv(cval(9),cval(5)) , C) , cval(32) )
+K = csub (C, cval (-273.15))
+R = cmul (cval(80), cdiv (C, cval(100)))
 
 probe ("Celsius    ", C)
 probe ("Fahrenheit ", F)
@@ -201,6 +204,6 @@ R.forget("user")
 R.set("user", 0)
 R.forget("user")
 C.set("user", 100)
-]]
+--]]
 
 

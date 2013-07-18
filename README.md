@@ -5,6 +5,15 @@ This Lua package extends the propagation of constraints to values with uncertain
 
 A command line tool is provided, which can work on files or tables or can be used interactively. In debugging mode, additional messages on any changes ("probes") are sent to stderr. Check the example files for proper use of equations. In table mode, columns for absolute or relative uncertainties are marked with traing +- or ± or % respectively and filled during output.
 
+## Theory
+
+There are two main types of objects: Connectors keep the values, a list of listeners and basically understand two signals for setting their values. Whenever they get such a signal from any informant, they inform all listeners except the informer whether they got a new value or they lost their value.
+
+Constraints understand these changes, ask for values, compute new ones, and propagate them to another connector. Probes are derived from constraints and just communicate with the user. 
+
+The right part of any given equation is parsed into smaller expressions, which are converted to a connector attached to a constraint, which in turn is attaches itself to it's operands (other connectors or constants) during creation. In most cases, the symbol on the left part is an already known connector and therefore connected to the connector resulting from the expression via a unary constraint acting as a bidirectional pipe. 
+
+
 ## Example Usage
 
 ./gumsolver -h  
@@ -41,46 +50,48 @@ The order of precedence is as usual and can be modified by brackets.
 	c=        Set propagated value (to be implemented)
 	
 	
-## Special syntax at the command line
+## Special commands during interaction
 
 Comments start with a hash-sign and last until end of line.
-It is possible to submit special directives following an exclamation mark. Usuanlly, the first letter is distinctive
+It is possible to submit special directives following an exclamation mark. In most cases, the first letter is distinctive.
 
-	!ABSOLUTE  Switch to display absolute uncertainties (default)
-	!RELATIVE  Switch to display relative uncertainties
-	!INCLUDE   Literal inclusion of the specified file (TODO)
-	!PRINT	   Send the rest of the line to standard output
-	!DUMP 	   Show content of network
-	!CLONE     Clones given name from constraint with one segment less. Prototype-based inheritance (TODO)
-	!TRACE 	   Trigger tracing on/ off (TODO)
-    	!SAVE      Save onto stack (TODO)
-    	!LOAD      Load from stack (TODO)
-	!QUIT	   Stop processing regardless of any following content
+	!(A)BSOLUTE  	Switch to display absolute uncertainties (default)
+	!(R)ELATIVE  	Switch to display relative uncertainties
+	!(I)NCLUDE   	Literal inclusion of the specified file (TODO)
+	!(P)RINT	Send the rest of the line to standard output
+	!(D)UMP 	Show content of network
+	!(T)ABLE     	Tabulate records (horizontally)
+	!REC(O)RD	Print and save current state of connectors (vertically)
+	!(C)LONE     	Clones a connector with one name segment less. Prototype-based inheritance (TODO)
+	!(T)RACE   	Trigger tracing on/ off (TODO)
+	!(V)VERSION   	Show version and other information
+	!(H)ELP	   	Show help
+	!(Q)UIT	   	Stop processing regardless of any following content
 	
-	
-## Theory
+## Fields and Records in horizontal and vertical modes
 
-There are two main types of objects: Connectors keep the values, a list of listeners and basically understand two signals for setting their values. Whenever they get such a signal from any informant, they inform all listeners except the informer whether they got a new value or they lost their value.
+Input is divided into records separated as fields. It might be provided vertically while feeding line after line (with or without prompt) or horizontally in table style. By default, output is formatted alike, but it is possible to trigger the tabulated output of records in vertical mode and the record based output in horizontal mode (TODO).
 
-Constraints understand these changes, ask for values, compute new ones, and propagate them to another connector. Probes are derived from constraints and just communicate with the user. 
+The current state of connectors might be recorded either by explicitely starting a new record or at any line ending in table mode. Fields within table records might be interpreted as statements with predefined left side. Moreover, full statements are not restricted to the header line but might occur within the table as well. On the other hand in vertical modes several statements might be combined at one line when separated by field delimiters (TODO). 
 
-The right part of any given equation is parsed into smaller expressions, which are converted to a connector attached to a constraint, which in turn is attaches itself to it's operands (other connectors or constants) during creation. In most cases, the symbol on the left part is an already known connector and therefore connected to the connector resulting from the expression via a unary constraint acting as a bidirectional pipe. 
+Backreferences to previous records are a powerful feature for studying simulations. They consist of a symbol name and an index, denoted by an underscore followed by a valid record number. 
 
 ## Present Limitations
 
-Declaration of variables might be neccessary before assignment
+Bad ordering of symbols.
 
 Constant values within formulas are fixed without any uncertainties. Otherwise use variables.
-
-a=b+c+d will not resolve into all directions as it is converted to subexpressions with binary operators: a = (a+b)+c
 
 s=a*a will not resolve into all directions, the reason is given as an excercise.
 
 ## Future Improvements
 
+Consistent use of global variables.  
 Formal description of the grammar, as well as a clean parser instead of nested regular expressions.  
 Group of samples v=x1,x2,x3,...,xn.  
-Tablemode considering columns as arrays of values.
+Tablemode considering columns as arrays of values.  
+Compute means and uncertainties of a range of records or all records (star) or a SQL-like query. 
+
 
 ## Licence
 
