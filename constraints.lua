@@ -6,6 +6,7 @@ function table.find (t, value)
 end
 
 TRACE=nil
+QUIET=nil
 
 -------------------------------------------------------------------------
 -------------------------------------------------------------------------
@@ -101,6 +102,7 @@ function probe (name, connector)
    local me = {}
    local actors = {connector}
    local printprobe = function (value)
+      if QUIET then return end
       if TRACE then
          print (short(me), PRINT16 (name), value)
       else         

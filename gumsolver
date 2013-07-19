@@ -1,9 +1,11 @@
 #! /usr/bin/lua
 
-dofile ("csv.lua")
-dofile ("table-mode.lua")
-dofile ("debug.lua")
-dofile ("expressions.lua")
+require 'display'
+require 'expressions'
+require 'csv'
+require 'table-mode'
+require 'constraints_with_values'
+require 'dump'
 
 VERSION = "0.1.0"
 SCRIPT=arg and string.match(arg[0],"[^%w%-]*([%w%-]*)$")
@@ -77,11 +79,8 @@ end
 function process_line (input)   
    local name=extract_name(input)
    local expr=extract_expr(input)
-   -- a known name should not create any new constraints
-   -- therefore it is neccessary to distinguish between setting of new values or submitting new constraints
-   -- moreover, the left side should not be overwritten
 
-   if not name then error ("No name found for left-side: "..input) end
+   if not name then return end
    
    if expr then
       if string.match (expr, NAMEPATTERN.."_[%d]+") then          --backreference
@@ -112,34 +111,68 @@ function process_line (input)
 end
 
 
+function content(line)
+return string.match(line:match("^([^#]*)#?.*$"), "^%s*(.*)%s*$")
+end
+
+
+function process_directive(line)
+   local function set (v)
+      RELATIVE=v
+   return not nil
+   end
+   local function trace()
+      TRACE=not TRACE
+   return not nil
+   end
+return line:find("^#P") and (TABLE or RECORD) and  warn (line:match("^!PR?I?N?T? (.*)$") or "")
+       or
+       line:find("^#P") and  (print (line:match("^#PR?I?N?T? (.*)$") or "") or not nil)
+       or
+       line:find("^#A") and set (nil)
+       or
+       line:find("^#I") and process_input(line:match("^#IN?C?L?U?D?E?%s+([%S]+)")) and (print() or not nil)
+       or
+       line:find("^#O") and record_connectors()
+       or
+       line:find("^#RECO?R?D?") and record_connectors()
+       or
+       line:find("^#R") and set(not nil)
+       or
+       line:find("^#TRA?C?E?") and trace()
+       or
+       line:find("^#T") and tabulate_records()
+       or
+       line:find("^#D") and dump_connectors()
+end
+
+function process_input(file)
+   function cycle(line)
+      if line:find("^#[A-Z]") then
+         process_directive(line)
+      else
+         process_line(content(line))
+      end
+      if PROMPT then io.write(PROMPT) end 
+   end
+   if file then 
+      for line in io.lines(file) do cycle (line) end
+   else
+      for line in io.lines() do if line:find("^#Q") then break else cycle (line) end end
+   end
+return not nil
+end
+
 if TABLE then
    process_table(CONNECTORS, DELIMITER)
 else
    if PROMPT and not DEBUG then io.write(SCRIPT.." version "..VERSION.."\n") end
    if DEBUG  then io.stderr:write(SCRIPT.." version "..VERSION.."   DEBUG MODE\n") end
    if PROMPT then io.write(PROMPT) end
-   for line in io.lines() do 
-      line = line:match("%s*(.*)$")
-      if line:find("^!Q") then break end
-      if line:find("^!P") then 
-         if TABLE or RECORD then 
-            io.stderr:write (line:match("^!PR?I?N?T? (.*)$") or "","\n")
-         else
-            print (line:match("^!PR?I?N?T? (.*)$") or "")
-         end
-         line=""
-      end
-      if line:find("^!R") then RELATIVE=not nil ; line="" end
-      if line:find("^!A") then RELATIVE=nil     ; line="" end
-      if line:find("^!O") then record_connectors(); line="" end
-      if line:find("^!T") then tabulate_records(); line="" end
-      if line:find("^!D") then dump_connectors(); line="" end
-      line = line:find("#") and line:match("([^#]*)#.*$") or line
-      if line:len() > 0 then process_line (line) end
-      if PROMPT then io.write(PROMPT) end 
-   end
+   process_input()
    print()
 end
+
 
 --[[
 process_line ("F = ( (9 / 5 ) * C ) + 32")

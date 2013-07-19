@@ -31,7 +31,15 @@ lambdatest   = function (x) return type(x) == "function" end
 threadtest   = function (x) return type(x) == "thread" end
 userdatatest = function (x) return type(x) == "userdata" end 
 
-function best (n, precision) 
+warn = function (t, ...) -- recursive consumer
+return #arg > 0 and io.stderr:write(tostring(t)) and io.stderr:write("\t") and warn(unpack(arg))
+       or
+       t and io.stderr:write(tostring(t)) and warn()
+       or
+       io.stderr:flush() and io.stderr:write("\n")
+end
+
+best = function (n, precision) 
    if n==0 then
       return "0"
    else 
@@ -47,47 +55,51 @@ function best (n, precision)
    end
 end
 
-TABLE_OF_TABLES={}
+HIDDEN_TABLE_OF_TABLES={}
 function short (t)
    if t == {} then
       return "{}"
    end
-   local key = table.find (TABLE_OF_TABLES, t)
+   local key = table.find (HIDDEN_TABLE_OF_TABLES, t)
    assert (tabletest(t), "Error while trying to display table: No table given")
 
    if key then
       return "t"..key
    else
-      table.insert (TABLE_OF_TABLES, t)
-      return "t"..#TABLE_OF_TABLES
+      table.insert (HIDDEN_TABLE_OF_TABLES, t)
+      return "t"..#HIDDEN_TABLE_OF_TABLES
    end
 end
 
-display = function (t, ...) -- recursive consumer
+display = function (t, ...)
    displayT = function (t)
+      io.write ("{")
       for k,v in pairs(t) do 
-         io.write(k,"=")
-         display1(v)
-         dummy = k==#t or io.write(" ")
+         io.write(k,"=", display1(v))
+         dummy = k==t.n or io.write(" ")
       end
+      io.write ("}")
+      return not nil
    end
    display1 = function (t) return
-      niltest(t)    and io.write("nil")
+      niltest(t)    and "nil"
       or
-      stringtest(t) and io.write(string.format('%q',t))
+      stringtest(t) and string.format('%q',t)
       or
-      numbertest(t) and io.write(best(t))
+      numbertest(t) and best(t)
       or
-      lambdatest(t) and io.write(tostring(t))
+      lambdatest(t) and tostring(t)
       or
-      tabletest(t)  and {io.write ("{");displayT(t);io.write ("}")}
+      tabletest(t)  and displayT(t) and ""
       or
-      not t and io.write("nil")
+      t and "not nil" -- PRAGMA
       or
-      t and io.write("not nil") -- PRAGMA
+      "nil"
    end
-   display1 (t) 
-   return arg.n > 0 and {io.write(" "); display(unpack(arg))} 
+   return #arg > 0 and io.write(display1(t), "\t") and display(unpack(arg))
           or
+          t and io.write(display1(t), "\n")
+          or 
           io.write("\n")
 end
+

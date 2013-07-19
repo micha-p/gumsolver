@@ -21,52 +21,75 @@ cat demo/example.txt | ./gumsolver
 cat demo/tableformula.txt | ./gumsolver -d "\t" -t  
 rlwrap ./gumsolver -i
 
-## Syntax
-
-Symbols are case-sensitive and might contain at least one letter as well as digits or dots without any limits in length. 
-These dots divide symbol names into segments, which allow for simple object-oriented prototype-based inheritance. Underscores or carets or dashes are not allowed, as they might interfere too easily with math notation. 
-
-Settings for local internalization are taken into account execpt for the decimal separator, which is always a decimal point. Numbers are read as decimals and might contain underscores at arbitrary locations to separate between parts of different magnitude. 
-
-Spacing between tokens within lines is skipped and any linebreak will trigger evaluations.
-
-Notation of uncertainties:  
-v+-u &emsp; v±u &emsp; v+-u% &emsp; v±u%
-
-Notation of equations:  
-a=b+c &emsp; a=b\*c &emsp; a=b\*(c-d) &emsp; ...
-
-The order of precedence is as usual and can be modified by brackets. 
-
-
 ## Commands for interactions and pipelined files
 
-	a         Declare variable (will be automated)
 	a=12      Assign value
 	a=12+-3   Assign value with uncertainty
 	a=12+-3%  Assign value with uncertainty (percentage of value)
 	a         Forget value
-	a=b*c     Submit equation for declared variables
-	c=        Set propagated value (to be implemented)
-	
-	
-## Special commands during interaction
+	a=b*c     Submit equation
+	c=        Set propagated value as user supplied (to be implemented)
 
-Comments start with a hash-sign and last until end of line.
-It is possible to submit special directives following an exclamation mark. In most cases, the first letter is distinctive.
+## Domain specific language
 
-	!(A)BSOLUTE  	Switch to display absolute uncertainties (default)
-	!(R)ELATIVE  	Switch to display relative uncertainties
-	!(I)NCLUDE   	Literal inclusion of the specified file (TODO)
-	!(P)RINT	Send the rest of the line to standard output
-	!(D)UMP 	Show content of network
-	!(T)ABLE     	Tabulate records (horizontally)
-	!REC(O)RD	Print and save current state of connectors (vertically)
-	!(C)LONE     	Clones a connector with one name segment less. Prototype-based inheritance (TODO)
-	!(T)RACE   	Trigger tracing on/ off (TODO)
-	!(V)VERSION   	Show version and other information
-	!(H)ELP	   	Show help
-	!(Q)UIT	   	Stop processing regardless of any following content
+### Principles
+
+Notation should rather reflect math instead of code.  
+No needless yntax.  
+Commands to the underlying framework should be clearly distinct.  
+Characterset within ASCII and some optional additions (for +- ^2).  
+All statements are evaluated sequentially.
+
+### Syntax
+
+Symbols are case-sensitive and might contain at least one letter as well as digits or dots without any limits in length. 
+These dots divide symbol names into segments, which allow for simple object-oriented prototype-based inheritance. Settings for local internalization are taken into account for these letters. Underscores or carets or dashes are not allowed, as they might interfere too easily with math notation. 
+
+Symobols are used for variables or (mathematical) functions. 
+
+Values constist of real numbers with or without absolute or relative uncertainty. Numbers are read as decimals and might contain underscores at arbitrary locations to separate between parts of different magnitude. The decimal separator is always denoted by the decimal point.
+
+Spacing between tokens within lines is skipped and any linebreak will trigger evaluations.
+
+Values and Uncertainties:  
+v+-u &emsp; v±u &emsp; v+-u% &emsp; v±u%
+
+Group of samples (TODO): 
+v=x1,x2,x3,...,xn   &emsp;  v = (x1 x2 x3 x4)
+Either a delimier indicating subsequent values or a ending is neccessary
+
+Operators:  
+\+ - * / 
+^2 &emsp; ² &emsp; ^0.5 
+Order of precedence is as usual and might be modified by brackets
+
+Equations:  
+a=b+c &emsp; a=b\*c &emsp; a=b\*(c-d) &emsp; ...
+
+Functions(TODO):  
+f(x) = 2 * x + 1
+
+### Special commands
+
+It is possible to submit special directives following a hash sign at the beginning of the line. 
+In many cases, the first letter is distinctive.
+
+	#(A)BSOLUTE  	Switch to display absolute uncertainties (default)
+	#(R)ELATIVE  	Switch to display relative uncertainties
+	#(I)NCLUDE   	Literal inclusion of specified file given by following characters
+	#(P)RINT	Send the rest of the line to standard output
+	#(D)UMP 	Show content of network
+	#(T)ABLE     	Tabulate records (horizontally)
+	#REC(O)RD	Print, save and clear current state of connectors 
+	#(C)LONE     	Clones a connector with one name segment less. Prototype-based inheritance (TODO)
+	#TRACE   	Toggle tracing on/ off
+	#(V)VERSION   	Show version and other information
+	#(H)ELP	   	Show help
+	#(Q)UIT	   	Stop processing regardless of any following content
+
+### Comments 
+
+Comments start anywhere in a line with a hash-sign followed by any letter not used for directives and last until end of line.
 	
 ## Fields and Records in horizontal and vertical modes
 
@@ -78,17 +101,14 @@ Backreferences to previous records are a powerful feature for studying simulatio
 
 ## Present Limitations
 
-Bad ordering of symbols.
-
-Constant values within formulas are fixed without any uncertainties. Otherwise use variables.
-
+Constant values within formulas are fixed without any uncertainties. Otherwise use variables.  
 s=a*a will not resolve into all directions, the reason is given as an excercise.
 
 ## Future Improvements
 
-Consistent use of global variables.  
+Consistent use of global variables in code.  
 Formal description of the grammar, as well as a clean parser instead of nested regular expressions.  
-Group of samples v=x1,x2,x3,...,xn.  
+Encapsulation of constraints into functions (in a mathematical sense).  
 Tablemode considering columns as arrays of values.  
 Compute means and uncertainties of a range of records or all records (star) or a SQL-like query. 
 

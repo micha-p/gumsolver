@@ -1,6 +1,6 @@
-dofile ("display.lua")
-dofile ("constraints.lua")
-dofile ("values.lua")
+require 'display'
+require 'constraints'
+require 'values'
 
 ADD = vadd
 SUB = vsub
