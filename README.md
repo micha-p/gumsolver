@@ -5,6 +5,8 @@ This Lua package extends the propagation of constraints to values with uncertain
 
 A command line tool is provided, which can work on files or tables or can be used interactively. In debugging mode, additional messages on any changes ("probes") are sent to stderr. Check the example files for proper use of equations. In table mode, columns for absolute or relative uncertainties are marked with traing +- or ± or % respectively and filled during output.
 
+So far, the list of commands is NOT stable but constantly modificated according to de needs of some private real world examples.
+
 ## Theory
 
 There are two main types of objects: Connectors keep the values, a list of listeners and basically understand two signals for setting their values. Whenever they get such a signal from any informant, they inform all listeners except the informer whether they got a new value or they lost their value.
@@ -35,9 +37,9 @@ rlwrap ./gumsolver -i
 ### Principles
 
 Notation should rather reflect math instead of code.  
-No needless yntax.  
+No needless syntax.  
 Commands to the underlying framework should be clearly distinct.  
-Characterset within ASCII and some optional additions (for +- ^2).  
+Characterset within ASCII and some optional additions (for +- and ^2).  
 All statements are evaluated sequentially.
 
 ### Syntax
@@ -78,12 +80,12 @@ In many cases, the first letter is distinctive.
 	#(R)ELATIVE  	Switch to display relative uncertainties
 	#(I)NCLUDE   	Literal inclusion of specified file given by following characters
 	#(P)RINT	Send the rest of the line to standard output
-	#(D)UMP 	Show content of network
+	#(D)UMP 	Show network of constraints
 	#(T)ABLE     	Tabulate records (horizontally)
 	#REC(O)RD	Print, save and clear current state of connectors 
 	#(C)LONE     	Clones a connector with one name segment less. Prototype-based inheritance (TODO)
 	#TRACE   	Toggle tracing on/ off
-	#(V)VERSION   	Show version and other information
+	#(V)ERBOSITY  	0=mute 1=normal 2=debug
 	#(H)ELP	   	Show help
 	#(Q)UIT	   	Stop processing regardless of any following content
 

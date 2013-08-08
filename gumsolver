@@ -117,21 +117,30 @@ end
 
 
 function process_directive(line)
+
    local function set (v)
       RELATIVE=v
    return not nil
    end
-   local function trace()
-      TRACE=not TRACE
+   
+   local function trace(num)
+      TRACE=num and (num==1) or not TRACE
    return not nil
    end
+
+   local function verbosity(num)
+      DEBUG = num and (num==2) or nil
+      MUTE = num and (num==0) or nil
+   return not nil
+   end
+   
 return line:find("^#P") and (TABLE or RECORD) and  warn (line:match("^!PR?I?N?T? (.*)$") or "")
        or
        line:find("^#P") and  (print (line:match("^#PR?I?N?T? (.*)$") or "") or not nil)
        or
        line:find("^#A") and set (nil)
        or
-       line:find("^#I") and process_input(line:match("^#IN?C?L?U?D?E?%s+([%S]+)")) and (print() or not nil)
+       line:find("^#I") and process_input(line:match("^#IN?C?L?U?D?E?%s+([%S]+)"))
        or
        line:find("^#O") and record_connectors()
        or
@@ -139,11 +148,15 @@ return line:find("^#P") and (TABLE or RECORD) and  warn (line:match("^!PR?I?N?T?
        or
        line:find("^#R") and set(not nil)
        or
-       line:find("^#TRA?C?E?") and trace()
+       line:find("^#TRA?C?E?") and trace(tonumber(line:match("^#TRA?C?E?%s+([%S]+)")))
+       or
+       line:find("^#VE?R?B?O?S?I?T?Y?") and verbosity(tonumber(line:match("^#VE?R?B?O?S?I?T?Y?%s+([%S]+)")))
        or
        line:find("^#T") and tabulate_records()
        or
        line:find("^#D") and dump_connectors()
+       or
+       error ("Unknown directive in line: " .. line)
 end
 
 function process_input(file)
@@ -160,6 +173,7 @@ function process_input(file)
    else
       for line in io.lines() do if line:find("^#Q") then break else cycle (line) end end
    end
+   print()
 return not nil
 end
 
@@ -170,7 +184,6 @@ else
    if DEBUG  then io.stderr:write(SCRIPT.." version "..VERSION.."   DEBUG MODE\n") end
    if PROMPT then io.write(PROMPT) end
    process_input()
-   print()
 end
 
 
