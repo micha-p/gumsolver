@@ -1,7 +1,7 @@
 gumsolver
 =========
 
-Propagation of constraints for values with uncertainties implemented in Lua
+Propagation of constraints for values with uncertainties implemented in Lua.
 
 Starting with one of the most exciting sections of the wizard book, these algorithms were ported to Lua and then adapted to make better use of tables. According to the rules for propagation of errors, a network equations is filled with values and their associated uncertainties into both directions. 
 
@@ -22,7 +22,10 @@ The right part of any given equation is parsed into smaller expressions, which a
 
 ./gumsolver -h  
 cat demo/example.txt | ./gumsolver  
-cat demo/tableformula.txt | ./gumsolver -d "\t" -t  
+cat demo/tableformula.txt | ./gumsolver -d "\t" -T  
+./gumsolver -f demo/example.txt  
+./gumsolver -T -f demo/tableformula.txt  
+./gumsolver -d , -T -f demo/tableformula.csv  
 rlwrap ./gumsolver -i
 
 ## Commands for interactions and pipelined files

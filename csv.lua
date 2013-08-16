@@ -1,16 +1,17 @@
 --header contains formula, records do not
 
 
-function csv_read(separator)
+function csv_read(separator,filehandle)
    local sep = separator or ","
-   local rheader=csv_read_line(assert(io.read(), sep))
+   io.input(filehandle)
+   local rheader=csv_process_line(assert(io.read(), sep))
    local rtable={}
    local header={}
 
    for k,v in ipairs(rheader) do header[k]= string.find(v,"=") and string.match(v,"%s*(.+)%s*=") or v end
    for line in io.lines() do
       local fields={}
-      for i,field in ipairs(csv_read_line(line, sep)) do
+      for i,field in ipairs(csv_process_line(line, sep)) do
       	 if i > #header then
       	    error ("To many input fields, check line endings!")
       	 else
@@ -30,7 +31,7 @@ function try_tonumber (s)
 end
 
 
-function csv_read_line (str, sep)
+function csv_process_line (str, sep)
       str = str .. sep
       local t = {}
       local pos = 1

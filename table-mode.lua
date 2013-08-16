@@ -16,7 +16,7 @@ return colname:match("%+%-$")
        or 
        colname:match ("%%$")
        or 
-       colname:match ("=") and process_formula(c, CONSTRAINTS, colname)
+       colname:match ("=") and process_line(colname)
        or
        new(colname)
 end
@@ -38,8 +38,8 @@ function print_result (colnames)
 return r
 end
 
-function process_table(c, DELIMITER)
-   records,header,colnames=csv_read(DELIMITER)
+function process_table(c, DELIMITER, filehandle)
+   records,header,colnames=csv_read(DELIMITER, filehandle)
    for col, colname in ipairs(header) do process_column(c, colname) end 
    if DEBUG then 
       for name,connector in pairs(c) do probe2stderr(name,connector) end
@@ -49,12 +49,13 @@ function process_table(c, DELIMITER)
                        (DELIMITER == " ") and "SPACE"
                        or
                        DELIMITER) 
-      io.stderr:write ("      DEBUGGING TO STDERR\n")
+      io.stderr:write ("      DEBUGGING TO STDERR\n\n")
    end
    print(unpack(header))
    for line, record in ipairs(records) do 
       process_record (c, record)
       r= print_result(colnames)
       print(unpack(r))
+      print_record()
    end
 end

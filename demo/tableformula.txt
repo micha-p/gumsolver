@@ -1,4 +1,4 @@
-w	w±	h	h+-	d	d+-	area=w*h	area%	vol= area *d	vol%
+w	w±	h	h+-	d	d+-	area=w*h	area%	vol=area*d	vol%
 10	.	3	.	5	.	.	.	.	.
 10	1	3	.	5	.	.	.	.	.
 10	.1	3	.	5	.	.	.	.	.
