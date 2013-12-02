@@ -73,8 +73,21 @@ function tabulate_records()
       end
       print(unpack(r))
    end
+return not nil
 end
 
+function tabulate_selected(head)
+   print(head)
+   for line, record in ipairs(RECORDS) do 
+      for k,v in pairs (record) do 
+         if head:find(k) then
+            io.write(PRINTV(v),"\t±",PRINTE(v),"\t")
+         end 
+      end
+      print()
+   end
+return not nil
+end
 
 function dump_connectors()
    function name(k)  io.write(PRINT16(k),"\t") end

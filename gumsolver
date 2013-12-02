@@ -121,6 +121,13 @@ function content(line)
 return string.match(line:match("^([^#]*)#?.*$"), "^%s*(.*)%s*$")
 end
 
+function include(f)
+   if DEBUG then io.stderr:write("INCLUDE\t",f,"\n") end
+   local h=assert(io.open(f))
+   process_input(h)
+   h:close()
+return not nil
+end
 
 function process_directive(line)
    local function set (v)
@@ -136,14 +143,16 @@ function process_directive(line)
       MUTE = num and (num==0) or nil
       return not nil
    end
+   local arg  = line:match("^#[A-Z]+%s+([%S]+)")
+   local rest = line:match("^#[A-Z]+%s+(.*)$")
    return 
       line:find("^#P") and (TABLE or RECORD) and  warn (line:match("^!PR?I?N?T? (.*)$") or "")
       or
-      line:find("^#P") and  (print (line:match("^#PR?I?N?T? (.*)$") or "") or not nil)
+      line:find("^#P") and  (print (rest) or not nil)
       or
       line:find("^#A") and set (nil)
       or
-      line:find("^#I") and process_input(line:match("^#IN?C?L?U?D?E?%s+([%S]+)"))
+      line:find("^#I") and include(arg)
       or
       line:find("^#O") and record_connectors()
       or
@@ -155,14 +164,14 @@ function process_directive(line)
       or
       line:find("^#VE?R?B?O?S?I?T?Y?") and verbosity(tonumber(line:match("^#VE?R?B?O?S?I?T?Y?%s+([%S]+)")))
       or
-      line:find("^#T") and tabulate_records()
+      line:find("^#T") and ((arg and tabulate_selected(rest)) or tabulate_record())
       or
-      line:find("^#D") and dump_connectors()
+      line:find("^#D") and (dump_connectors() or not nil)
       or
       error ("Unknown directive in line: " .. line)
 end
 
-function process_input(file)
+function process_input(filehandle)
    function cycle(line)
       if line:find("^#[A-Z]") then
          process_directive(line)
@@ -171,7 +180,17 @@ function process_input(file)
       end
       if PROMPT then io.write(PROMPT) end 
    end
-   for line in io.input(INFILE):lines() do if line:find("^#Q") then break else cycle (line) end end
+   for line in io.input(filehandle):lines() do 
+      if line:find("^#Q") then 
+         if INFILE then 
+            return not nil
+         else
+            os.exit()
+         end
+      else 
+         cycle (line)
+      end 
+   end
    print()
 return not nil
 end
