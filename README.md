@@ -26,7 +26,7 @@ cat demo/tableformula.txt | ./gumsolver -d "\t" -T
 ./gumsolver -f demo/example.txt  
 ./gumsolver -T -f demo/tableformula.txt  
 ./gumsolver -d , -T -f demo/tableformula.csv  
-rlwrap ./gumsolver -i
+rlwrap ./gumsolver -I
 
 ## Commands for interactions and pipelined files
 
@@ -42,21 +42,21 @@ rlwrap ./gumsolver -i
 ### Principles
 
 Notation should rather reflect math instead of code.  
-No needless syntax.  
+No syntactic sugar.  
 Commands to the underlying framework should be clearly distinct.  
 Characterset within ASCII and some optional additions (for +- and ^2).  
 All statements are evaluated sequentially.
 
 ### Syntax
 
+Whitespace between tokens within lines is not significant and any linebreak will trigger evaluations.
+
 Symbols are case-sensitive and might contain at least one letter as well as digits or dots without any limits in length. 
-These dots divide symbol names into segments, which allow for simple object-oriented prototype-based inheritance. Settings for local internalization are taken into account for these letters. Underscores or carets or dashes are not allowed, as they might interfere too easily with math notation. 
+These dots divide symbol names into segments, which allow for simple object-oriented prototype-based inheritance. Settings for local internalization are taken into account for these letters. Symbols are used for variables or (mathematical) functions. 
 
-Symobols are used for variables or (mathematical) functions. 
+Values consist of real decimal numbers with or without absolute or relative uncertainty. The decimal separator is always denoted by the decimal point.
 
-Values constist of real numbers with or without absolute or relative uncertainty. Numbers are read as decimals and might contain underscores at arbitrary locations to separate between parts of different magnitude. The decimal separator is always denoted by the decimal point.
-
-Spacing between tokens within lines is skipped and any linebreak will trigger evaluations.
+Underscroes might be used to separate parts of symbols as well as parts of different magnitude in numbers. 
 
 Values and Uncertainties:  
 v+-u &emsp; v±u &emsp; v+-u% &emsp; v±u%
@@ -104,7 +104,7 @@ Input is divided into records separated as fields. It might be provided vertical
 
 The current state of connectors might be recorded either by explicitely starting a new record or at any line ending in table mode. Fields within table records might be interpreted as statements with predefined left side. Moreover, full statements are not restricted to the header line but might occur within the table as well. On the other hand in vertical modes several statements might be combined at one line when separated by field delimiters (TODO). 
 
-Backreferences to previous records are a powerful feature for studying simulations. They consist of a symbol name and an index, denoted by an underscore followed by a valid record number. 
+Backreferences to previous records are a powerful feature for studying simulations. They consist of a symbol name and an index, denoted by an at_sign followed by a valid record number. 
 
 ## Present Limitations
 

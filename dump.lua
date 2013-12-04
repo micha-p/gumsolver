@@ -1,19 +1,5 @@
 RECORDS = {}
 
-function print2stderr (name, value)
-    warn (PRINT16(name), value and tostring(value) or ".")
-end
-
-function probe2stderr (name, connector)
-   local me = {}
-   local actors = {connector}
-   me = make_actor (function () print2stderr (name, PRINT (connector.get())) end, function () print2stderr (name,".") end)
-   connector.connect(me)
-   me["class"]  = "probe"
-   me["setters"]  = function () return actors end
-   return me
-end
-
 function print_record()
    local r={}
    local sorted={}
@@ -24,7 +10,7 @@ function print_record()
    for i,n in ipairs(sorted) do
       v=CONNECTORS[n] 
       if TABLE or RECORD then 
-         if DEBUG then print2stderr (PRINT16(n), v.value() and PRINT(v.get()) or "") end
+         if DEBUG then orange (PRINT16(n), v.value() and PRINT(v.get()) or "") end
       else
          if not MUTE then print (PRINT16(n), v.value() and PRINT(v.get()) or "") end
       end

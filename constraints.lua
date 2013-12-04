@@ -19,13 +19,13 @@ ADD = function(a,b) return a+b  end
 SUB = function(a,b) return a-b  end 
 MUL = function(a,b) return a*b  end 
 DIV = function(a,b) return a/b  end
-SQU = function(a)   return a^2  end
+POW = function(a)   return a^2  end
 SQR = function(a)   return a^.5 end
 RET = function(a)   return a    end
 
 PRINT16 = function (a) return a end
-PRINT = function (a) return a end
-EQUAL = function (a,b) return a == b end
+PRINT   = function (a) return a end
+EQUAL   = function (a,b) return a == b end
 
 function make_actor (process_new_value, process_forget_value, h)  
   local me = {}
@@ -98,21 +98,27 @@ function constant (connector, value)
 return me
 end
 
+
+function printprobe (me, value)
+   if not MUTE then
+      if TRACE then
+         print (short(me), PRINT16 (me["name"]), value)
+      else         
+         print (PRINT16 (me["name"]), value)
+      end
+   end
+end
+
+
 function probe (name, connector)
    local me = {}
    local actors = {connector}
-   local printprobe = function (value)
-      if not MUTE then
-         if TRACE then
-            print (short(me), PRINT16 (name), value)
-         else         
-            print (PRINT16 (name), value)
-         end
-      end
-   end
-   me = make_actor (function () printprobe (PRINT (connector.get())) end, function () printprobe (".") end,name)
-   me["class"]  = "probe"
-   me["setters"]  = function () return actors end
+   me = make_actor (function () printprobe (me, PRINT (connector.get())) end, 
+                    function () printprobe (me, ".") end,
+                    name)
+   me["class"]   = "probe"
+   me["name"]    = name
+   me["setters"] = function () return actors end
    connector.connect(me)
    return me
 end
@@ -172,8 +178,8 @@ function cadd(x,y) local z=make_connector(); constraint(x, y, z, ADD, SUB); retu
 function csub(x,y) local z=make_connector(); constraint(z, y, x, ADD, SUB); return z end
 function cmul(x,y) local z=make_connector(); constraint(x, y, z, MUL, DIV); return z end
 function cdiv(x,y) local z=make_connector(); constraint(z, y, x, MUL, DIV); return z end
-function csqu(x  ) local z=make_connector(); pipe      (x,    z, SQU, SQR); return z end 
-function csqr(x  ) local z=make_connector(); pipe      (x,    z, SQR, SQU); return z end 
+function csqu(x  ) local z=make_connector(); pipe      (x,    z, POW, SQR); return z end 
+function csqr(x  ) local z=make_connector(); pipe      (x,    z, SQR, POW); return z end 
 function cret(x  ) local z=make_connector(); pipe      (x,    z, RET, RET); return z end 
 function cval(v  ) local z=make_connector(); z.set("constant",v);           return z end 
 

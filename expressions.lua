@@ -32,7 +32,8 @@ return stringtest(expr) and createfunc(expr)
        error ("Can't resolve expression: "..node)
 end 
 
-function process_expr (createfunc, formula)
+
+function REMOVEprocess_expr (createfunc, formula)
    name=extract_name(formula)
    expr=extract_expr(formula)
    c[name] = EVAL(createfunc, order(parse(expr)))

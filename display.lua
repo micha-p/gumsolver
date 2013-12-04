@@ -32,11 +32,15 @@ threadtest   = function (x) return type(x) == "thread" end
 userdatatest = function (x) return type(x) == "userdata" end 
 
 warn = function (t, ...) -- recursive consumer
-return #arg > 0 and io.stderr:write(tostring(t)) and io.stderr:write("\t") and warn(unpack(arg))
+return #arg > 0 and 
+       io.stderr:write("\27[33m") and 
+       io.stderr:write(tostring(t)) and 
+       io.stderr:write("\t") and 
+       warn(unpack(arg))
        or
-       t and io.stderr:write(tostring(t)) and warn()
+       t and io.stderr:write("\27[33m") and io.stderr:write(tostring(t)) and warn()
        or
-       io.stderr:flush() and io.stderr:write("\n")
+       io.stderr:flush() and io.stderr:write("\27[m\n")
 end
 
 best = function (n, precision) 

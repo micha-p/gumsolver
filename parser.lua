@@ -1,4 +1,4 @@
-NAMEPATTERN   = "%w*%a[%w%.]*"
+NAMEPATTERN   = "[%w]*%a[%w%.%_]*[%w]*"
 NUMBERPATTERN = "-?[%d._]+"
 
 
