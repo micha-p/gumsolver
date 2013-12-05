@@ -1,9 +1,6 @@
-function table.find (t, value)
-  for k,v in pairs(t) do
-    if v==value then return k end
-  end
-  return nil
-end
+package.path = package.path .. ";include/?.lua"
+require 'display'
+require 'tables'
 
 TRACE=nil
 MUTE=nil
@@ -27,10 +24,9 @@ PRINT16 = function (a) return a end
 PRINT   = function (a) return a end
 EQUAL   = function (a,b) return a == b end
 
-function make_actor (process_new_value, process_forget_value, h)  
+function make_actor (process_new_value, process_forget_value)  
   local me = {}
   me["class"]  = "actor"
-  me.info  = function () return h end
   me.new   = function () process_new_value() end
   me.lost  = function () process_forget_value() end
   return me
@@ -57,7 +53,7 @@ function pipe (a, r, op1, op2)
   return me
 end
 
-function constraint (a, b, r, op1, op2, hint)  
+function constraint (a, b, r, op1, op2)  
    local me = {}
    local actors = {a,b,r}
    local function process_new_value ()
@@ -78,9 +74,9 @@ function constraint (a, b, r, op1, op2, hint)
       b.forget(me)
       process_new_value()
    end
-   me = make_actor (process_new_value, process_forget_value, hint) 
+   me = make_actor (process_new_value, process_forget_value) 
    me["setters"]  = function () return actors end
-   me["class"]  = "expression"
+   me["class"]  = "constraint"
    a.connect(me)
    b.connect(me)
    r.connect(me)
@@ -124,12 +120,11 @@ function probe (name, connector)
 end
 
 
-function make_connector(hint)
+function make_connector()
   local me = {}
   local value = nil
   local informant = nil
   local actors = {}
-  local info = hint
 
   local set_my_value = function (setter, newval)
     if TRACE then print (short(me), "SET from", tabletest(setter) and short(setter) or setter, newval.abs()) end
@@ -160,7 +155,6 @@ function make_connector(hint)
   end
 
   me["class"]  = "connector"
-  me.info    	= function () return info end
   me.listeners  = function () return actors end
   me.value 	= function () return informant end
   me.get    	= function () return value end
@@ -181,16 +175,15 @@ function cdiv(x,y) local z=make_connector(); constraint(z, y, x, MUL, DIV); retu
 function csqu(x  ) local z=make_connector(); pipe      (x,    z, POW, SQR); return z end 
 function csqr(x  ) local z=make_connector(); pipe      (x,    z, SQR, POW); return z end 
 function cret(x  ) local z=make_connector(); pipe      (x,    z, RET, RET); return z end 
-function cval(v  ) local z=make_connector(); z.set("constant",v);           return z end 
+function cval(v  ) local z=make_connector(); constant  (z,v);               return z end 
 
 function SUM   (x,y,s) return constraint(x, y, s, ADD, SUB); end
 function DIFF  (x,y,d) return SUM (y,d,x) end
 function PROD  (x,y,p) return constraint(x, y, p, MUL, DIV); end
 function RATIO (x,y,r) return PROD (y,r,x) end
+function CONST (x,v)   return constant (x, v) end
 
 --[[
-
-
 C = make_connector()
 F = cadd (cmul (cdiv(cval(9),cval(5)) , C) , cval(32) )
 K = csub (C, cval (-273.15))
@@ -213,6 +206,8 @@ R.forget("user")
 R.set("user", 0)
 R.forget("user")
 C.set("user", 100)
+
+
 --]]
 
 

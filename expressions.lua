@@ -1,5 +1,17 @@
+package.path = package.path .. ";include/?.lua"
 require 'constraints_with_values'
+require 'display'
 require 'parser'
+
+CONNECTORS={}    		-- name: connector (explicitly defined) 
+CONSTRAINTS={}   		-- hint or number : constraint 
+PROBES={}
+
+eadd=function(x,y,z) c=SUM   (x,y,z);c["info"]="+";table.insert(CONSTRAINTS,c);return z end
+esub=function(x,y,z) c=DIFF  (x,y,z);c["info"]="-";table.insert(CONSTRAINTS,c);return z end
+emul=function(x,y,z) c=PROD  (x,y,z);c["info"]="*";table.insert(CONSTRAINTS,c);return z end
+ediv=function(x,y,z) c=RATIO (x,y,z);c["info"]="/";table.insert(CONSTRAINTS,c);return z end
+eval=function(  v,z) c=CONST (z,v  );c["info"]="=";table.insert(CONSTRAINTS,c);return z end
 
 function run (connectortable, connector, val , abs , rel) 
    if connector then
@@ -13,49 +25,53 @@ function run (connectortable, connector, val , abs , rel)
    end
 end
 
-function EVAL(createfunc, expr)
-   local function apply (op1, infix, op2)
-   return infix=="+" and cadd (op1, op2)
-          or
-          infix=="-" and csub (op1, op2)
-          or
-          infix=="*" and cmul (op1, op2)
-          or
-          infix=="/" and cdiv (op1, op2)
+function ensure_symbol (name, connector)
+   if not CONNECTORS[name] then 
+      CONNECTORS[name]= connector or make_connector()
    end
-return stringtest(expr) and createfunc(expr)
-       or
-       numbertest(expr) and cval (vnew(expr))
-       or
-       tabletest(expr)  and apply (EVAL(createfunc,expr[1]),expr[2],EVAL(createfunc,expr[3])) 
-       or
-       error ("Can't resolve expression: "..node)
-end 
-
-
-function REMOVEprocess_expr (createfunc, formula)
-   name=extract_name(formula)
-   expr=extract_expr(formula)
-   c[name] = EVAL(createfunc, order(parse(expr)))
-   probe(name,c[name])
+return CONNECTORS[name]
 end
+
+function ensure_symbol_and_probe(name, connector)
+   ensure_symbol (name, connector)
+   if not PROBES[name] then 
+         PROBES[name] = probe (name, CONNECTORS[name]) 
+   end
+return CONNECTORS[name]
+end
+
+function EVAL(expr, rootconnector)
+   local function apply (op1, infix, op2)
+      local root = rootconnector or ensure_symbol(infix..table.count(CONNECTORS) + 1)
+   return infix=="+" and eadd (op1, op2, root)
+          or
+          infix=="-" and esub (op1, op2, root)
+          or
+          infix=="*" and emul (op1, op2, root)
+          or
+          infix=="/" and ediv (op1, op2, root)
+   end
+return stringtest(expr) and ensure_symbol_and_probe(expr)
+       or
+       numbertest(expr) and eval (vnew(expr), ensure_symbol("="..table.count(CONNECTORS) + 1))
+       or
+       tabletest(expr)  and apply (EVAL(expr[1]),expr[2],EVAL(expr[3])) 
+       or
+       error ("Can't resolve expression: >"..expr.."<")
+end 
 
 --[[
 
-c={} 
-
-function create(name) 
-   if not c[name] then
-      c[name]=make_connector()
-      probe(name,c[name])
-   end
-return c[name]
+function process(name, expr)
+   local root = ensure_symbol_and_probe (name)
+   EVAL (order(parse(expr)), root)
 end
 
-process_expr (create,"F = ( (9 / 5 ) * C ) + 32" )
-process_expr (create,"K = C + 273.15")
-process_expr (create,"R = 80 * (C / 100)")
+process ("F","( (9 / 5 ) * C ) + 32" )
+process ("K","C + 273.15")
+process ("R","80 * (C / 100)")
 
+c=CONNECTORS
 run(c,c["C"], 25)
 run(c,c["F"], 212)
 run(c,c["C"])
@@ -68,6 +84,11 @@ run(c,c["R"])
 run(c,c["R"], 0)
 run(c,c["R"])
 run(c,c["C"], 100) 
+
+for k,v in pairs(CONNECTORS) do display("con", k, v["name"]) end
+for k,v in pairs(CONSTRAINTS) do display(k, v["info"]) end
+for k,v in pairs(PROBES) do display(k) end
+
 
 --]]
 

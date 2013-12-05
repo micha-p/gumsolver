@@ -1,6 +1,9 @@
 #! /usr/bin/lua
 
+package.path = package.path .. ";include/?.lua"
 require 'display'
+require 'table'
+
 require 'expressions'
 require 'process'
 require 'csv'
@@ -8,6 +11,23 @@ require 'table-mode'
 require 'constraints_with_values'
 require 'dump'
 require 'mask'
+
+
+VERSION = "0.3.0"
+SCRIPT=arg and string.match(arg[0],"[^%w%-]*([%w%-]*)$")
+INFILE=nil
+TABLE=nil 
+PROMPT=nil
+MUTE=nil
+RELATIVE=nil
+DELIMITER="\t"
+RECORD=nil
+DEBUG=nil
+MASK=nil
+RECORDS={}			-- number : record
+DEFINITIONS={}			-- number : string
+COLNAMES={}			-- number : string
+
 
 -- overwrite !!!!
 function printprobe (me, value)
@@ -33,29 +53,6 @@ function printprobe (me, value)
 end
     
 
-VERSION = "0.3.0"
-SCRIPT=arg and string.match(arg[0],"[^%w%-]*([%w%-]*)$")
-INFILE=nil
-TABLE=nil 
-PROMPT=nil
-RELATIVE=nil
-DELIMITER="\t"
-RECORD=nil
-DEBUG=nil
-MASK=nil
-CONNECTORS={}    		-- name: connector (explicitly defined) 
-SUBEXPRESSIONS={} 	        -- connectors of subexpressions 
-CONSTRAINTS={}   		-- hint or number : constraint 
-PROBES={}
-RECORDS={}			-- number : record
-DEFINITIONS={}			-- number : string
-COLNAMES={}			-- number : string
-
-cadd   = function (x,y) local z = make_connector("+"); table.insert(SUBEXPRESSIONS,z); c=SUM   (x,y,z); table.insert(CONSTRAINTS,c);return z end
-csub   = function (x,y) local z = make_connector("-"); table.insert(SUBEXPRESSIONS,z); c=DIFF  (x,y,z); table.insert(CONSTRAINTS,c);return z end
-cmul   = function (x,y) local z = make_connector("*"); table.insert(SUBEXPRESSIONS,z); c=PROD  (x,y,z); table.insert(CONSTRAINTS,c);return z end
-cdiv   = function (x,y) local z = make_connector("/"); table.insert(SUBEXPRESSIONS,z); c=RATIO (x,y,z); table.insert(CONSTRAINTS,c);return z end
-cval   = function (x  ) local z = make_connector("#"); table.insert(SUBEXPRESSIONS,z); z.set("constant", x); return z end
 
 help={}
 help[ 1]="gumsolver -- resolving equations by propagation of uncertainties"
@@ -70,7 +67,8 @@ help[ 9]="         -f             use file for input"
 help[10]="         -I             interactive (readline wrapper suggested)"
 help[11]="         -J             interactive (nonscrolling mask)"
 help[12]="         -v             display version"
-help[13]="         -h             this help"
+help[13]="         -q             quite"
+help[14]="         -h             this help"
 
 while arg and arg[1] do
    TABLE    = TABLE    or arg[1]=="-T"
@@ -78,6 +76,7 @@ while arg and arg[1] do
    DEBUG    = DEBUG    or arg[1]=="-D"
    MASK     = MASK     or arg[1]=="-J"
    RECORD   = RECORD   or arg[1]=="-R"
+   MUTE     = MUTE     or arg[1]=="-q"
    RELATIVE = RELATIVE or arg[1]=="-r" or arg[1]=="-a" and nil
    if arg[1]=="-f" then 
       table.remove(arg,1)

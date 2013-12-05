@@ -1,0 +1,17 @@
+foreach = function (t, func)
+  for key,value in pairs(t) do func (key, value) end
+end
+
+map = function (t, func)
+  local new = {}
+  for key,value in pairs(t) do new[key] = func(value) end
+  return new
+end
+
+find = function (t, value)
+  for k,v in pairs(t) do
+    if v==value then return k end
+  end
+  return nil
+end
+

@@ -7,42 +7,27 @@ function process_input(line)
       end
 end
 
-
-function ensure_symbol_and_probe(name, connector)
-   if not CONNECTORS[name] then 
-      CONNECTORS[name]=connector or make_connector(name)
-   end
-   if not PROBES[name] then 
-      if TABLE or RECORD then
-         if DEBUG then PROBES[name] = probe (name, CONNECTORS[name]) end
-      else
-         PROBES[name] = probe (name, CONNECTORS[name]) 
-      end
-   end
-return CONNECTORS[name]
-end
     
 function process_line (input)   
    local name=extract_name(input)
    local expr=extract_expr(input)
 
-   if not name then return end
+   if not input then return end
+   if input=="" then return end
+   if not name  then error ("Name not recognized:"..input.."$") return end
    
    if expr then
-      if string.match (expr, NAMEPATTERN.."@[%d]+") then          --backreference
+      if string.match (expr, NAMEPATTERN.."@[%d]+") then          -- backreference
          local entry  = string.match (expr, NAMEPATTERN) 
          local recnum = tonumber(string.match (expr, "@([%d]+)")) 
          local rec = assert (RECORDS[recnum], "Invalid record number: "..recnum)
          run(CONNECTORS, ensure_symbol_and_probe(name), rec[entry])
+
       elseif  string.find (expr, "[%a*/%(%)]") then               -- name = expression
          if DEBUG then warn(PRINT16(name), expr) end
          DEFINITIONS[name]=expr
-         local e = EVAL(ensure_symbol_and_probe, order(parse(expr)))
-         if CONNECTORS[name] then
-            CONSTRAINTS[name.."="]=pipe(CONNECTORS[name],e,RET,RET)
-         else
-            ensure_symbol_and_probe(name, e)
-         end
+         EVAL(order(parse(expr)), ensure_symbol_and_probe(name))
+
       elseif string.match (expr, "^[%s%d%.%_%±%+%-%%]*$") then    -- name = value
          local val
          val = vreader(expr)
@@ -51,7 +36,8 @@ function process_line (input)
       else
          error ("Can't resolve right side: "..expr)
       end
-   else
+   else 
+      ensure_symbol_and_probe(name)                               -- name
       run(CONNECTORS, CONNECTORS[name])
    end
 end

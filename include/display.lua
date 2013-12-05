@@ -11,6 +11,7 @@
 -- it should handle typechecking more efficiently than by comparing strings
 -- it might adopt these very few convenient scheme functions
 
+
 -- six of the seven important types need a predicate
 
 niltest      = function (x) return x == nil end
