@@ -1,4 +1,4 @@
-
+VALUECOLUMN=33
 MASKTABLE={}  -- hash
 MASKARRAY={}  -- array
 CURRENTLINE=0
@@ -15,6 +15,10 @@ function jumpup()
    end
 end
 
+function jumplefttostart ()
+   jumptoline(CURRENTLINE)
+   -- io.write("\27E\27[A")
+end
 
 function jumptoline(line)
    CURRENTLINE=line
@@ -22,7 +26,8 @@ function jumptoline(line)
 end
 
 function jumptoend(further)
-   jumptoline (#MASKARRAY + (further or 0))
+   CURRENTLINE = #MASKARRAY + (further or 0)
+   jumptoline(CURRENTLINE)
 end
 
 
@@ -36,39 +41,65 @@ function jumptomaskline(name)
       jumptoend()
    end
 end
-   
-function printmaskline (name,value)
-   jumptomaskline (name)
-   io.write("\27[K")
-   io.write(PRINT16(name))
-   io.write("\t")
-   io.write(value)
-   --- io.write("\27[0m\n")
-   jumptoend ()
-   -- io.write("\27[J")
-end
 
-
-function loop()
-   local char = io.read(1)
-   if char and char ~= "\004" then 
-      handlechar(char)
-      loop() 
-      jumptoend()
+function reservemaskline(name, value, unit)
+   local line = MASKTABLE[name]
+   if not line then 
+      table.insert(MASKARRAY,name)
+      MASKTABLE[name] = #MASKARRAY
+      printmaskline (name, value, unit)
    end
 end
 
-function navigate ()
-   -- os.execute("stty min 1 time 0 -icanon -echo -echoctl")
+function printrawmaskline (string)
+   jumptomaskline (string)
+   io.write("\27[K")
+   io.write(string)
+   io.write("\27E\27[A")
+end
+
+function printfullmaskline (string)
+   table.insert(MASKARRAY,string)
+   jumptoend ()
+   io.write("\27[K")
+   io.write(string)
+   jumplefttostart ()
+return not nil
+end
+
+
+function printmaskline (name, value, unit)
+   if name then
+      jumptomaskline (name)
+      io.write("\27[K")
+      io.write(PRINT16(name))
+      io.write("\t")
+      io.write(PRINT16(unit or ""))
+      io.write("\t")
+      io.write(value or "")
+      jumplefttostart ()
+   end
+end
+
+function getchar()
    os.execute("stty raw -echo")
-   loop()
+   local char = io.read(1)
    os.execute("stty sane")
-   print()
-end   
+return char
+end
+
+function loop()
+   local char = ""
+   while char and char ~= "\004" and char ~= "\003" and char ~= "q" do 
+      char = getchar()
+      handlechar(char)
+   end
+   jumptoend(1)
+end
 
 function handlechar(char)
    if char=="\27" then
-      local nextchar= io.read(1)
+      local nextchar=io.read(1)
       if nextchar =="[" then
          local command = io.read(1)
          if command=="A" then jumpup()   end 
@@ -83,22 +114,22 @@ function handlechar(char)
       end
    elseif char=="\13" or char=="\10" then
       jumptoend(1)
-      os.execute("stty sane")
-      io.write("\27[K\27[J> ")
+      io.write("\27[K\27[J")
       process_input(io.read())
-      os.execute("stty raw -echo")
       jumptoend(1)
       io.write("\27[K")
       jumptoend(0)
    elseif char=="\126" or char=="\127"  or char=="\b" then
-      process_cycle(MASKARRAY[CURRENTLINE])
+      local c=CURRENTLINE
+      process_input(MASKARRAY[CURRENTLINE])
+      jumptoline(c)
    elseif char=="\t" then
-      io.write("\27[".. CURRENTLINE ..";17H")
+      local c=CURRENTLINE
+      io.write("\27[".. c ..";"..VALUECOLUMN.."H")
       io.write("\27[K")
-      os.execute("stty sane")
       io.write("")
       process_input(MASKARRAY[CURRENTLINE].."=".. io.read())
-      os.execute("stty raw -echo")
+      jumptoline(c)
    else
       io.write ("\a")
    end

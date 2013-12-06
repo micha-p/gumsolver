@@ -1,9 +1,17 @@
-NAMEPATTERN   = "[%w]*%a[%w%.%_]*[%w]*"
+NAMEPATTERN   = "[%w]*%a[%w%.%_]*[%w]*[%*']*"
 NUMBERPATTERN = "-?[%d._]+"
+UNITPATTERN   = "%[.+%]"
 
+function extract_left (s)
+return s:match("%s*(.*)%s*=?")
+end 
 
 function extract_name (s)
 return s:match("%s*("..NAMEPATTERN..")%s*=?")
+end 
+
+function extract_unit (s)
+return s:match("%s*"..NAMEPATTERN.."%s*..("..UNITPATTERN..")%s*=?")
 end 
 
 function extract_expr (s)

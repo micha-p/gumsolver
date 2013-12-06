@@ -10,7 +10,10 @@ require 'csv'
 require 'table-mode'
 require 'constraints_with_values'
 require 'dump'
+require 'records'
 require 'mask'
+require 'trace'
+require 'units'
 
 
 VERSION = "0.3.0"
@@ -30,22 +33,22 @@ COLNAMES={}			-- number : string
 
 
 -- overwrite !!!!
-function printprobe (me, value)
+function printprobe (name, value, unit)
    if MASK then 
-      printmaskline (me["name"], value)
+      printmaskline (name, value, unit)
    else
       if not MUTE then
          if TRACE then
             if DEBUG then 
-               warn (short(me), PRINT16 (me["name"]), value)
+               warn (short(me), PRINT16 (name), PRINT16 (unit or ""), value)
             else
-               print (short(me), PRINT16 (me["name"]), value)
+               print (short(me), PRINT16 (name), PRINT16 (unit or ""), value)
             end
          else      
             if DEBUG then 
-               warn (PRINT16 (me["name"]), value)
+               warn (PRINT16 (name), PRINT16 (unit or ""), value)
             else
-               print (PRINT16 (me["name"]), value)
+               print (PRINT16 (name), PRINT16 (unit or ""), value)
             end
          end
       end
@@ -140,7 +143,7 @@ else
       io.input(temp)
    end
    if MASK then 
-      navigate() 
+      loop() 
    else  
       process_stdin()
    end

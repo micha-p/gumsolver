@@ -16,7 +16,13 @@ eval=function(  v,z) c=CONST (z,v  );c["info"]="=";table.insert(CONSTRAINTS,c);r
 function run (connectortable, connector, val , abs , rel) 
    if connector then
       if val then 
-         connector.set ("user", tabletest (val) and val or vnew (val, abs, rel))
+         local new = tabletest (val) and val or vnew (val, abs, rel)
+         local scale = connector["scale"]
+         if scale then
+            connector.set ("user", vamp(new, scale))
+         else
+            connector.set ("user", new)
+         end
       else
          connector.forget ("user")
       end

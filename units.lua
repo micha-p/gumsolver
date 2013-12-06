@@ -17,7 +17,6 @@ If any symbol is used for the first time, its possible to declare its scale as:
 a [%]
 b [%o]
 c [ppm]
-d [‰]
 
 These scales ar not units, but its also possible to use:
 
@@ -25,35 +24,29 @@ a [m]
 b [°C]
 c [any]
 
-Of course, its also necessary to scale values during input for this probe. Therefore, any connector still contains the original values for propagation within the network, but is attached to a scaled probe. Setting values is more difficult, as values from outside have to be scaled to. 
+Of course, its also necessary to scale values during input for this probe. Therefore, any connector still contains the original values for propagation within the network, but is attached to a scaled probe. Setting values is more difficult, as values from user have to be scaled to. 
 Here, the run-routine checks if the connector has a scale and uses this value before setting.
 
-Therefore, all communication to connectors from outside is now handled by the probe. Not just getting but also setting.
-
-Any unknown scales between the brackets are taken as arbitary unit with a scale of 1.
+Any units have to be declared before first use with directive #UNIT. Using this mechanism its possible to use unicode strings for permil without tainting the source files. Otherwise they are used but not scaled.
+variables using units have to declared before first use in expressions as well.
 
 --]]
 
 SCALE={}
-SCALE["[%]"]=0.01
-SCALE["[‰]"]=0.001
-SCALE["[°/oo]"]=0.001
-SCALE["[%o]"]=0.001
-SCALE["[ppm]"]=0.000001
 
-
-PRINTU = function (r, u) 
-   local len = 15 - #u
-   return string.format("%-"..len.."."..len.."s",r)..u
-   end
+function readunit(line)
+   unit = line:match("%s*("..UNITPATTERN..").*")
+   scale= line:match("%s*"..UNITPATTERN.."%s+([%d.]+).*")
+   SCALE[unit]=scale
+   if DEBUG then warn ("UNIT", unit, scale) end
+end
 
 
 function probe_unit (name, connector, unit, scale)
    local me = {}
    local actors = {connector}
-   local printname = PRINTU (name, unit)
-   me = scale and make_actor (function () printprobe (printname, PRINT (vamp(connector.get(), 1/scale))) end, 
-                              function () printprobe (printname, ".") end, name)
+   me = scale and make_actor (function () printprobe (name, PRINT (vamp(connector.get(), 1/scale)), unit) end, 
+                              function () printprobe (name, ".", unit) end, name)
         or make_actor (function () printprobe (printname, PRINT (connector.get())) end, 
                        function () printprobe (printname, ".") end,
                        name)

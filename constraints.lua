@@ -1,15 +1,14 @@
-package.path = package.path .. ";include/?.lua"
-require 'display'
-require 'tables'
-
-TRACE=nil
-MUTE=nil
-
 -------------------------------------------------------------------------
 -------------------------------------------------------------------------
 --
 -- constraints, probes and pipes are all actors, which only understand the signals "new" and "lost"
 -- while creation they attach themselve to the given connectors
+
+
+package.path = package.path .. ";include/?.lua"
+require 'display'
+require 'tables'
+
 
 
 ADD = function(a,b) return a+b  end 
@@ -95,22 +94,16 @@ return me
 end
 
 
-function printprobe (me, value)
-   if not MUTE then
-      if TRACE then
-         print (short(me), PRINT16 (me["name"]), value)
-      else         
-         print (PRINT16 (me["name"]), value)
-      end
-   end
+function printprobe (name, value)
+   print (PRINT16 (name, value))
 end
 
 
 function probe (name, connector)
    local me = {}
    local actors = {connector}
-   me = make_actor (function () printprobe (me, PRINT (connector.get())) end, 
-                    function () printprobe (me, ".") end,
+   me = make_actor (function () printprobe (name, PRINT (connector.get())) end, 
+                    function () printprobe (name, ".") end,
                     name)
    me["class"]   = "probe"
    me["name"]    = name

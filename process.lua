@@ -10,24 +10,24 @@ end
     
 function process_line (input)   
    local name=extract_name(input)
+   local unit=extract_unit(input)
    local expr=extract_expr(input)
 
    if not input then return end
    if input=="" then return end
    if not name  then error ("Name not recognized:"..input.."$") return end
-   
+   if MASK then reservemaskline(name, unit) end
+
    if expr then
       if string.match (expr, NAMEPATTERN.."@[%d]+") then          -- backreference
          local entry  = string.match (expr, NAMEPATTERN) 
          local recnum = tonumber(string.match (expr, "@([%d]+)")) 
          local rec = assert (RECORDS[recnum], "Invalid record number: "..recnum)
          run(CONNECTORS, ensure_symbol_and_probe(name), rec[entry])
-
       elseif  string.find (expr, "[%a*/%(%)]") then               -- name = expression
          if DEBUG then warn(PRINT16(name), expr) end
          DEFINITIONS[name]=expr
          EVAL(order(parse(expr)), ensure_symbol_and_probe(name))
-
       elseif string.match (expr, "^[%s%d%.%_%±%+%-%%]*$") then    -- name = value
          local val
          val = vreader(expr)
@@ -37,8 +37,13 @@ function process_line (input)
          error ("Can't resolve right side: "..expr)
       end
    else 
-      ensure_symbol_and_probe(name)                               -- name
-      run(CONNECTORS, CONNECTORS[name])
+      if unit then
+         ensure_symbol_and_probe_with_unit (name, unit)            -- name [unit]
+         run(CONNECTORS, CONNECTORS[name])
+      else
+         ensure_symbol_and_probe(name)                             -- name
+         run(CONNECTORS, CONNECTORS[name])
+      end
    end
 end
 
@@ -59,9 +64,13 @@ function process_directive(line)
    local arg  = line:match("^#[A-Z]+%s+([%S]+)")
    local rest = line:match("^#[A-Z]+%s+(.*)$")
    return 
-      line:find("^#P") and (TABLE or RECORD) and  orange (line:match("^!PR?I?N?T? (.*)$") or "")
+      line:find("^#P") and (TABLE or RECORD) and  warn (line:match("^!PR?I?N?T? (.*)$") or "")
       or
-      line:find("^#P") and  (print (rest) or not nil)
+      line:find("^#P") and MASK and printfullmaskline (rest)
+      or
+      line:find("^#P") and (print (rest) or not nil)
+      or
+      line:find("^#U") and (readunit (rest) or not nil)
       or
       line:find("^#A") and set (nil)
       or
