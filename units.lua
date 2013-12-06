@@ -58,6 +58,11 @@ function probe_unit (name, connector, unit, scale)
    return me
 end
 
+function getval_from_connector_with_unit(connector)
+   local scale = connector["scale"] or 1
+return PRINT (vamp(connector.get(), 1/scale))
+end
+   
 function ensure_symbol_and_probe_with_unit (name, unit, connector)
    c= ensure_symbol (name, connector)
    c["scale"] = SCALE[unit]

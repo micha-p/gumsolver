@@ -12,6 +12,7 @@ function process_line (input)
    local name=extract_name(input)
    local unit=extract_unit(input)
    local expr=extract_expr(input)
+   local val
 
    if not input then return end
    if input=="" then return end
@@ -19,16 +20,23 @@ function process_line (input)
    if MASK then reservemaskline(name, unit) end
 
    if expr then
-      if string.match (expr, NAMEPATTERN.."@[%d]+") then          -- backreference
+      if string.match (expr, NAMEPATTERN.."@[%d]+") then          	-- name@...
          local entry  = string.match (expr, NAMEPATTERN) 
          local recnum = tonumber(string.match (expr, "@([%d]+)")) 
          local rec = assert (RECORDS[recnum], "Invalid record number: "..recnum)
          run(CONNECTORS, ensure_symbol_and_probe(name), rec[entry])
-      elseif  string.find (expr, "[%a*/%(%)]") then               -- name = expression
+      elseif string.match (input, NAMEPATTERN.."%s*=%s*$") then		-- name =
+         local c = CONNECTORS[name]
+         if c then 
+            local val = getval_from_connector_with_unit(c)
+            if not MASK then print (val) end
+            return val
+         end
+      elseif  string.find (expr, "[%a*/%(%)]") then               	-- name = expression
          if DEBUG then warn(PRINT16(name), expr) end
          DEFINITIONS[name]=expr
          EVAL(order(parse(expr)), ensure_symbol_and_probe(name))
-      elseif string.match (expr, "^[%s%d%.%_%±%+%-%%]*$") then    -- name = value
+      elseif string.match (expr, "^[%s%d%.%_%±%+%-%%]*$") then    	-- name = value
          local val
          val = vreader(expr)
          if DEBUG then warn(PRINT16(name), expr.." (user)") end
@@ -38,10 +46,10 @@ function process_line (input)
       end
    else 
       if unit then
-         ensure_symbol_and_probe_with_unit (name, unit)            -- name [unit]
+         ensure_symbol_and_probe_with_unit (name, unit)            	-- name [unit]
          run(CONNECTORS, CONNECTORS[name])
       else
-         ensure_symbol_and_probe(name)                             -- name
+         ensure_symbol_and_probe(name)                             	-- name
          run(CONNECTORS, CONNECTORS[name])
       end
    end

@@ -1,3 +1,4 @@
+CLIPBOARD=""
 VALUECOLUMN=33
 MASKTABLE={}  -- hash
 MASKARRAY={}  -- array
@@ -90,11 +91,12 @@ end
 
 function loop()
    local char = ""
-   while char and char ~= "\004" and char ~= "\003" and char ~= "q" do 
+   while char and char ~= "\004" and char ~= "q" do 
       char = getchar()
       handlechar(char)
    end
    jumptoend(1)
+   io.write("\27[K\27[J")
 end
 
 function handlechar(char)
@@ -130,6 +132,23 @@ function handlechar(char)
       io.write("")
       process_input(MASKARRAY[CURRENTLINE].."=".. io.read())
       jumptoline(c)
+   elseif char=="\03" then    -- copy
+      local name=MASKARRAY[CURRENTLINE]
+      if name and CONNECTORS[name] then
+         CLIPBOARD = process_line(MASKARRAY[CURRENTLINE].."=")
+      end
+   elseif char=="\24" then    -- cut
+      local name=MASKARRAY[CURRENTLINE]
+      if name and CONNECTORS[name] then
+         CLIPBOARD = process_line(MASKARRAY[CURRENTLINE].."=")
+         process_input(MASKARRAY[CURRENTLINE])
+      end
+   elseif char=="\22" then    -- paste
+      local name=MASKARRAY[CURRENTLINE]
+      if CLIPBOARD and name and CONNECTORS[name] then
+         process_line(MASKARRAY[CURRENTLINE])
+         process_line(MASKARRAY[CURRENTLINE].."=".. CLIPBOARD)
+      end
    else
       io.write ("\a")
    end

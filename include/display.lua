@@ -34,6 +34,7 @@ return #arg > 0 and
        io.stderr:flush() and io.stderr:write("\27[m\n")
 end
 
+
 best = function (n, precision) 
    if n==0 then
       return "0"
