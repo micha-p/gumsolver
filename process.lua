@@ -17,7 +17,7 @@ function process_line (input)
    if not input then return end
    if input=="" then return end
    if not name  then error ("Name not recognized:"..input.."$") return end
-   if MASK then reservemaskline(name, unit) end
+   if MASK then reservemaskline(name, nil, unit) end
 
    if expr then
       if string.match (expr, NAMEPATTERN.."@[%d]+") then          	-- name@...

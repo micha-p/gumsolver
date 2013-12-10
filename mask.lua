@@ -48,7 +48,7 @@ function reservemaskline(name, value, unit)
    if not line then 
       table.insert(MASKARRAY,name)
       MASKTABLE[name] = #MASKARRAY
-      printmaskline (name, value, unit)
+      printmaskline (name, ".", unit)
    end
 end
 
@@ -132,18 +132,32 @@ function handlechar(char)
       io.write("")
       process_input(MASKARRAY[CURRENTLINE].."=".. io.read())
       jumptoline(c)
-   elseif char=="\03" then    -- copy
+   elseif char=="-" then    	--  	~80% ~80% ~80% = 50%
+      local name=MASKARRAY[CURRENTLINE]
+      if name and CONNECTORS[name] then
+         local x = process_line(name.."=")
+         process_line(name)
+         process_line(name.."="..PRINT(vamp(vreader(x), math.pow (1/2, 1/3))))
+      end
+   elseif char=="+" then    	-- 	~125% ~125% ~125% = 200%
+      local name=MASKARRAY[CURRENTLINE]
+      if name and CONNECTORS[name] then
+         local x = process_line(name.."=")
+         process_line(name)
+         process_line(name.."="..PRINT(vamp(vreader(x), math.pow (2, 1/3))))
+      end
+   elseif char=="\03" then    	-- 	copy
       local name=MASKARRAY[CURRENTLINE]
       if name and CONNECTORS[name] then
          CLIPBOARD = process_line(MASKARRAY[CURRENTLINE].."=")
       end
-   elseif char=="\24" then    -- cut
+   elseif char=="\24" then    	-- 	cut
       local name=MASKARRAY[CURRENTLINE]
       if name and CONNECTORS[name] then
          CLIPBOARD = process_line(MASKARRAY[CURRENTLINE].."=")
          process_input(MASKARRAY[CURRENTLINE])
       end
-   elseif char=="\22" then    -- paste
+   elseif char=="\22" then    	-- 	paste
       local name=MASKARRAY[CURRENTLINE]
       if CLIPBOARD and name and CONNECTORS[name] then
          process_line(MASKARRAY[CURRENTLINE])
