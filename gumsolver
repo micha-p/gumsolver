@@ -27,6 +27,7 @@ DELIMITER="\t"
 RECORD=nil
 DEBUG=nil
 MASK=nil
+TRACE=nil
 RECORDS={}			-- number : record
 DEFINITIONS={}			-- number : string
 COLNAMES={}			-- number : string
@@ -34,25 +35,10 @@ COLNAMES={}			-- number : string
 
 -- overwrite !!!!
 function printprobe (name, value, unit)
-   if MASK then 
-      printmaskline (name, value, unit)
-   else
-      if not MUTE then
-         if TRACE then
-            if DEBUG then 
-               warn (short(me), PRINT16 (name), PRINT16 (unit or ""), value)
-            else
-               print (short(me), PRINT16 (name), PRINT16 (unit or ""), value)
-            end
-         else      
-            if DEBUG then 
-               warn (PRINT16 (name), PRINT16 (unit or ""), value)
-            else
-               print (PRINT16 (name), PRINT16 (unit or ""), value)
-            end
-         end
-      end
-   end
+   if MASK then printmaskline (name, value, unit) end
+   if DEBUG then warn (PRINT16 (name), PRINT16 (unit or ""), value) end
+   if TRACE then warn (short(CONNECTORS[name]), PRINT16 (name), PRINT16 (unit or ""), value) end
+   if not MUTE then print (PRINT16 (name), PRINT16 (unit or ""), value) end
 end
     
 
@@ -60,21 +46,23 @@ end
 help={}
 help[ 1]="gumsolver -- resolving equations by propagation of uncertainties"
 help[ 2]="usage:    gumsolver [options] [-f file]"
-help[ 3]="options: -d delimiter   field separator for input"
-help[ 4]="         -a             start displaying absolute uncertainties (default)"
-help[ 5]="         -r             start displaying relative uncertainties"
-help[ 6]="         -D             debug messages"
-help[ 7]="         -T             read input horizontally as tables"
-help[ 8]="         -R             Restrict output to records"
-help[ 9]="         -f             use file for input"
-help[10]="         -I             interactive (readline wrapper suggested)"
-help[11]="         -J             interactive (nonscrolling mask)"
-help[12]="         -v             display version"
-help[13]="         -q             quite"
-help[14]="         -h             this help"
+help[ 3]="options:  -f file        use file for input"
+help[ 4]="          -t             read input horizontally as tables"
+help[ 5]="          -d delimiter   field separator for input"
+help[ 6]="          -a             start displaying absolute uncertainties (default)"
+help[ 7]="          -r             start displaying relative uncertainties"
+help[ 8]="          -D             debug messages (stderr)"
+help[ 9]="          -T             trace signals (stderr)"
+help[10]="          -R             Restrict output to records"
+help[11]="          -I             interactive (readline wrapper suggested)"
+help[12]="          -J             interactive (nonscrolling mask)"
+help[13]="          -v             display version"
+help[14]="          -q             restrict standard output to special commands"
+help[15]="          -h             this help"
 
 while arg and arg[1] do
-   TABLE    = TABLE    or arg[1]=="-T"
+   TRACE    = TRACE    or arg[1]=="-T"
+   TABLE    = TABLE    or arg[1]=="-t"
    PROMPT   = PROMPT   or arg[1]=="-I" and "> "
    DEBUG    = DEBUG    or arg[1]=="-D"
    MASK     = MASK     or arg[1]=="-J"

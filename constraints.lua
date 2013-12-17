@@ -56,18 +56,14 @@ function constraint (a, b, r, op1, op2)
    local me = {}
    local actors = {a,b,r}
    local function process_new_value ()
-     if TRACE then print(short(me), "processing new", 
-                         short(a), short(b), short(r), 
-                         a.info(), b.info(), r.info(), 
-                         a.value() and a.get()["v"], b.value() and b.get()["v"], r.value() and r.get()["v"]) 
-     end
-     if     a.value() and b.value() and not r.value() then r.set(me, op1 (a.get(), b.get())) 
-     elseif r.value() and b.value() and not a.value() then a.set(me, op2 (r.get(), b.get())) 
-     elseif r.value() and a.value() and not b.value() then b.set(me, op2 (r.get(), a.get())) 
-     end
+      if TRACE then printtrace (me, "processing new", a, b, r) end 
+      if     a.value() and b.value() and not r.value() then r.set(me, op1 (a.get(), b.get())) 
+      elseif r.value() and b.value() and not a.value() then a.set(me, op2 (r.get(), b.get())) 
+      elseif r.value() and a.value() and not b.value() then b.set(me, op2 (r.get(), a.get())) 
+      end
    end
    local function process_forget_value ()
-      if TRACE then print(short(me), "processing forget", short(a), short(b), short(r)) end
+      if TRACE then printtrace (me, "processing forget", a, b, r) end 
       r.forget(me)
       a.forget(me)
       b.forget(me)
@@ -120,12 +116,12 @@ function make_connector()
   local actors = {}
 
   local set_my_value = function (setter, newval)
-    if TRACE then print (short(me), "SET from", tabletest(setter) and short(setter) or setter, newval.abs()) end
+    if TRACE then printtrace (me, "RECEIVED " .. newval.abs() .. " from ".. (tabletest(setter) and short(setter) or setter)) end
     if (not informant) then 
       value = newval
       informant = setter
       for k,v in pairs (actors) do if v ~= setter then 
-         if TRACE then print(short(me), "informs", short(v), "about", value.abs(), "orig from", tabletest(setter) and short(setter) or setter) end
+         if TRACE and DEBUG then printtrace (me, "informs about new value ", v) end
          v.new () end end
     else
       if not EQUAL (value, newval) then print (PRINT16 ("CONTRADICTION!") , PRINT (value) , PRINT (newval), hint) end
@@ -133,11 +129,11 @@ function make_connector()
   end
 
   local forget_my_value = function (retractor)
-    if TRACE then print (short(me), "FORGET from", tabletest(retractor) and short(retractor) or retractor, retractor == "user" and "u" or retractor.info()) end
+    if TRACE then printtrace (me, "RECEIVED FORGET from ".. (tabletest(retractor) and short(retractor) or retractor)) end
     if retractor == informant then
        informant = nil
        for k,v in pairs (actors) do if v ~= retractor then 
-       if TRACE then print(short(me), "informs", short(v), "about", "loss", "orig from", tabletest(retractor) and short(retractor) or retractor) end
+         if TRACE and DEBUG then printtrace (me, "informs about loss ", v) end
        v.lost() end end
     end
   end

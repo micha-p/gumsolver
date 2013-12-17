@@ -30,10 +30,10 @@ Such constraints are given as arithmetic terms building a network of equations. 
 
 ./gumsolver -h  
 cat demo/example.txt | ./gumsolver  
-cat demo/tableformula.txt | ./gumsolver -d "\t" -T  
+cat demo/tableformula.txt | ./gumsolver -d "\t" -t  
 ./gumsolver -f demo/example.txt  
-./gumsolver -T -f demo/tableformula.txt  
-./gumsolver -d , -T -f demo/tableformula.csv  
+./gumsolver -t -f demo/tableformula.txt  
+./gumsolver -d , -t -f demo/tableformula.csv  
 rlwrap ./gumsolver -I
 
 ## Commands for interactions and pipelined files
