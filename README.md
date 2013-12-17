@@ -63,7 +63,7 @@ Symbols are case-sensitive and might contain at least one letter as well as digi
 
 Values consist of real decimal numbers with or without absolute or relative uncertainty. The decimal separator is always denoted by the decimal point.
 
-Underscroes might be used to separate parts of symbols as well as parts of different magnitude in numbers. 
+Underscores might be used to separate parts of symbols as well as parts of different magnitude in numbers. 
 
 Values and Uncertainties:  
 v+-u &emsp; v±u &emsp; v+-u% &emsp; v±u%

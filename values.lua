@@ -18,9 +18,9 @@ function vadd (a, b)    return vfast (a.v + b.v , a.D2 + b.D2, nil) end
 function vsub (a, b)    return vfast (a.v - b.v , a.D2 + b.D2, nil) end
 function vmul (a, b)    return vfast (a.v * b.v , nil, a.d2 + b.d2) end
 function vdiv (a, b)    return vfast (a.v / b.v , nil, a.d2 + b.d2) end
-function vamp (a, s)    return vnew  (a.v * s ,  nil, a.d2)           end    -- relative error identical
-function vsqu (a, b)    return vnew  (a.v ^ 2 ,  nil, a.d2^0.5 * 2)   end    -- relative error doubled
-function vsqr (a, b)    return vnew  (a.v ^ 0.5, nil, a.d2^0.5 * 0.5) end    -- relative error halfed
+function vamp (a, s)    return vnew  (a.v * s ,  nil, a.d2)                                          end    -- relative error identical
+function vsqu (a, b)    return vnew  (a.v ^ 2 ,  a.D2 == 0 and 0, a.D2 ~= 0 and a.d2^0.5 * 2   or 0) end    -- relative error doubled
+function vsqr (a, b)    return vnew  (a.v ^ 0.5, a.D2 == 0 and 0, a.D2 ~= 0 and a.d2^0.5 * 0.5 or 0) end    -- relative error halfed
 
 
 function vreader (str)

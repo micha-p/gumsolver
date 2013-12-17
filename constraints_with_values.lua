@@ -12,7 +12,7 @@ SQR = vsqr
 -- GLOBALS
 EQUAL   = function (a,b) return a.v == b.v and a.D2 == b.D2 end 
 PRINTV  = function (r) return r and best(r.v,4) or "." end
-PRINTE  = function (r) return not r and "." or (RELATIVE and best(100 * math.sqrt(r.d2),2) .. "%") or best(math.sqrt(r.D2),3) end
+PRINTE  = function (r) return not r and "." or (RELATIVE and r.d2 ~= 0 and best(100 * math.sqrt(r.d2),2) .. "%") or best(math.sqrt(r.D2),3) end
 PRINT   = function (r) return r and (PRINTV(r) ..  " ± " .. PRINTE(r)) or "." end 
 PRINT16 = function (r) return string.format("%-15.15s",r) end
 
