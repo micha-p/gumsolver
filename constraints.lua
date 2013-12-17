@@ -15,7 +15,7 @@ ADD = function(a,b) return a+b  end
 SUB = function(a,b) return a-b  end 
 MUL = function(a,b) return a*b  end 
 DIV = function(a,b) return a/b  end
-POW = function(a)   return a^2  end
+SQU = function(a)   return a^2  end
 SQR = function(a)   return a^.5 end
 RET = function(a)   return a    end
 
@@ -161,8 +161,8 @@ function cadd(x,y) local z=make_connector(); constraint(x, y, z, ADD, SUB); retu
 function csub(x,y) local z=make_connector(); constraint(z, y, x, ADD, SUB); return z end
 function cmul(x,y) local z=make_connector(); constraint(x, y, z, MUL, DIV); return z end
 function cdiv(x,y) local z=make_connector(); constraint(z, y, x, MUL, DIV); return z end
-function csqu(x  ) local z=make_connector(); pipe      (x,    z, POW, SQR); return z end 
-function csqr(x  ) local z=make_connector(); pipe      (x,    z, SQR, POW); return z end 
+function csqu(x  ) local z=make_connector(); pipe      (x,    z, SQU, SQR); return z end 
+function csqr(x  ) local z=make_connector(); pipe      (x,    z, SQR, SQU); return z end 
 function cret(x  ) local z=make_connector(); pipe      (x,    z, RET, RET); return z end 
 function cval(v  ) local z=make_connector(); constant  (z,v);               return z end 
 
@@ -171,6 +171,8 @@ function DIFF  (x,y,d) return SUM (y,d,x) end
 function PROD  (x,y,p) return constraint(x, y, p, MUL, DIV); end
 function RATIO (x,y,r) return PROD (y,r,x) end
 function CONST (x,v)   return constant (x, v) end
+function SQUARE(x,y)   return pipe   (x,y, SQU, SQR) end
+function SQROOT(x,y)   return SQUARE (y,x)  end
 
 --[[
 C = make_connector()

@@ -1,4 +1,4 @@
-NAMEPATTERN   = "[%w]*%a[%w%.%_]*[%w]*[%*']*"
+NAMEPATTERN   = "[%w]*%a[%w%.%_]*[%w]*[%']*"
 NUMBERPATTERN = "-?[%d._]+"
 UNITPATTERN   = "%[.+%]"
 
@@ -42,7 +42,7 @@ function parse (str)
       function skipspace() return check_pattern ("%s*") end
       function opening()   return check_pattern ("%(") end  
       function closing()   return check_pattern ("%)") end  
-      function operator()  return check_pattern ("[%+%-%*%/]") end  
+      function operator()  return check_pattern ("[%+%-%*%/%^]") end  
       function variable()  return check_pattern (NAMEPATTERN) end  
       function number()    return extract_number( check_pattern (NUMBERPATTERN)) end 
       function operand()   return variable() or number() or subexpression() or nil end
@@ -69,7 +69,9 @@ function parse (str)
       if level==1 and closing() then error("too many closing brackets: "..str) end
       return #e==1 and e[1] or e , pos
    end
-   return expression (str,1, #str,1)
+   
+   local s=string.gsub(str,"²","^2")
+   return expression (s,1, #s,1)
 end
 
 function uncurry (expr)
@@ -90,7 +92,7 @@ end
 
 
 function find_first_highest_rank (expr)
-   rank={["+"]= 1,["-"]= 1,["*"]= 2,["/"]= 2}
+   rank={["+"]= 1,["-"]= 1,["*"]= 2,["/"]= 2,["^"]= 3}
    local pos=2
    for i,v in ipairs (expr) do
       -- print (i,v,rank[v],rank[expr[pos]])
@@ -117,13 +119,17 @@ function order (expr)
 end
 
 --[[
-dofile("display.lua")
+dofile("include/display.lua")
+
+display=write
 display (uncurry (parse ("a+b+c+d")))
 display (uncurry (parse ("a+b+c*d+100")))
 display (find_first_highest_rank (parse ("a+b+c+d+d")))
 display (order (parse ("a+b+c*d")))
 display (order (parse ("a+b+c*d")))
 display (order (parse ("a+b*c/d")))
+display (order (parse ("a+b+c^d")))
+display (order (parse ("a+b²+c^d")))
 display (order (parse "10"))
 display (parse "area")
 display (parse "1_000_000")
@@ -134,4 +140,4 @@ display (parse "Cc * (9 / 5 ) + 32")
 display (order (parse "Cc * (9 / 5 ) + 32"))
 display (parse "( (9 / 5 ) * Cd ) + 32")
 display (order (parse "( (9 / 5 ) * Cd ) + 32"))
-]]
+--]]

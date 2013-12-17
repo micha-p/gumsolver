@@ -11,6 +11,8 @@ eadd=function(x,y,z) c=SUM   (x,y,z);c["info"]="+";table.insert(CONSTRAINTS,c);r
 esub=function(x,y,z) c=DIFF  (x,y,z);c["info"]="-";table.insert(CONSTRAINTS,c);return z end
 emul=function(x,y,z) c=PROD  (x,y,z);c["info"]="*";table.insert(CONSTRAINTS,c);return z end
 ediv=function(x,y,z) c=RATIO (x,y,z);c["info"]="/";table.insert(CONSTRAINTS,c);return z end
+esqu=function(x,  z) c=SQUARE(x,z);  c["info"]="²";table.insert(CONSTRAINTS,c);return z end
+esqr=function(x,  z) c=SQROOT(x,z);  c["info"]="®";table.insert(CONSTRAINTS,c);return z end
 eval=function(  v,z) c=CONST (z,v  );c["info"]="=";table.insert(CONSTRAINTS,c);return z end
 
 function run (connectortable, connector, val , abs , rel) 
@@ -56,10 +58,18 @@ function EVAL(expr, rootconnector)
           infix=="*" and emul (op1, op2, root)
           or
           infix=="/" and ediv (op1, op2, root)
+          or
+          infix=="^" and op2==2 and esqu (op1, root)
+          or
+          infix=="^" and op2==0.5 and esqr (op1, root)
+          or
+          infix=="^" and error("Only squares and square roots allowed",PRINTV(op1),PRINTV(op2))
    end
 return stringtest(expr) and ensure_symbol_and_probe(expr)
        or
        numbertest(expr) and eval (vnew(expr), ensure_symbol("="..table.count(CONNECTORS) + 1))
+       or
+       tabletest(expr)  and expr[2]=="^" and apply (EVAL(expr[1]),expr[2],expr[3]) 
        or
        tabletest(expr)  and apply (EVAL(expr[1]),expr[2],EVAL(expr[3])) 
        or

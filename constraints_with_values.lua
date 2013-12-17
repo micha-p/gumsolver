@@ -6,6 +6,8 @@ ADD = vadd
 SUB = vsub
 MUL = vmul
 DIV = vdiv
+SQU = vsqu
+SQR = vsqr
 
 -- GLOBALS
 EQUAL   = function (a,b) return a.v == b.v and a.D2 == b.D2 end 

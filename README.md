@@ -59,7 +59,7 @@ All statements are evaluated sequentially.
 
 Whitespace between tokens within lines is not significant and any linebreak will trigger evaluations.
 
-Symbols are case-sensitive and might contain at least one letter as well as digits or dots without any limits in length. They can be further distinguished one or more trailing stars or apostrophes, which is commonly used in formulas. The dots divide symbol names into segments, which allow for simple object-oriented prototype-based inheritance. Settings for local internalization are taken into account for these letters. Symbols are used for variables or (mathematical) functions. 
+Symbols are case-sensitive and might contain at least one letter as well as digits or dots without any limits in length. They can be further distinguished one or more trailing apostrophes, which is commonly used in formulas. The dots divide symbol names into segments, which allow for simple object-oriented prototype-based inheritance. Settings for local internalization are taken into account for these letters. Symbols are used for variables or (mathematical) functions. 
 
 Values consist of real decimal numbers with or without absolute or relative uncertainty. The decimal separator is always denoted by the decimal point.
 
