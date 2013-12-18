@@ -18,7 +18,6 @@ require 'units'
 
 VERSION = "0.3.0"
 SCRIPT=arg and string.match(arg[0],"[^%w%-]*([%w%-]*)$")
-INFILE=nil
 TABLE=nil 
 PROMPT=nil
 MUTE=nil
@@ -56,51 +55,37 @@ help[ 9]="          -T             trace signals (stderr)"
 help[10]="          -R             Restrict output to records"
 help[11]="          -I             interactive (readline wrapper suggested)"
 help[12]="          -J             interactive (nonscrolling mask)"
+help[12]="          -Q             exit now"
 help[13]="          -v             display version"
 help[14]="          -q             restrict standard output to special commands"
 help[15]="          -h             this help"
 
-while arg and arg[1] do
-   TRACE    = TRACE    or arg[1]=="-T"
-   TABLE    = TABLE    or arg[1]=="-t"
-   PROMPT   = PROMPT   or arg[1]=="-I" and "> "
-   DEBUG    = DEBUG    or arg[1]=="-D"
-   MASK     = MASK     or arg[1]=="-J"
-   RECORD   = RECORD   or arg[1]=="-R"
-   MUTE     = MUTE     or arg[1]=="-q"
-   RELATIVE = RELATIVE or arg[1]=="-r" or arg[1]=="-a" and nil
-   if arg[1]=="-f" then 
-      table.remove(arg,1)
-      INFILE = assert(io.open(arg[1]))
-   end
-   if arg[1]=="-d" then 
-      table.remove(arg,1)
-      DELIMITER = ( arg[1]=="\\t" and "\t" or arg[1])
-   end
-   if arg[1]=="-h" then 
-      for k,v in ipairs (help) do print(v) end; return      
-   end
-   if arg[1]=="-v" then 
-      print ("version "..VERSION); return     
-   end
-   table.remove(arg,1)
-end
 
-
-function process_infile(filehandle)
-   for line in io.input(filehandle):lines() do 
-      if line:find("^#Q") then print(); os.exit() end
-      process_input (line)
-   end
-return not nil
-end
-
-function process_include(f)
+function process_include(f, toplevel)
    if DEBUG then warn("INCLUDE\t",f,"\n") end
-   for line in io.input(filehandle):lines() do 
-      if line:find("^#Q") then break end
-      process_input (line)
+return process_file(f, toplevel)
+end
+
+function process_file(f, toplevel)
+   local temp = io.input()
+   local filehandle = assert(io.open(f))
+   if TABLE then
+      process_table(CONNECTORS, DELIMITER, filehandle)
+   else
+      for line in io.input(filehandle):lines() do 
+         if line:find("^#Q") then 
+            if toplevel then 
+               print(); os.exit()
+            else
+               break
+           end
+         else
+            process_input (line)
+         end
+      end
    end
+   io.close(filehandle)
+   io.input(temp)   
 return not nil
 end
 
@@ -117,22 +102,45 @@ return not nil
 end
 
 
+-- START
+
+while arg and arg[1] do
+   TRACE    = TRACE    or arg[1]=="-T"
+   TABLE    = TABLE    or arg[1]=="-t"
+   PROMPT   = PROMPT   or arg[1]=="-I" and "> "
+   DEBUG    = DEBUG    or arg[1]=="-D"
+   MASK     = MASK     or arg[1]=="-J"
+   RECORD   = RECORD   or arg[1]=="-R"
+   MUTE     = MUTE     or arg[1]=="-q"
+   RELATIVE = RELATIVE or arg[1]=="-r" or arg[1]=="-a" and nil
+   if arg[1]=="-f" then 
+      table.remove(arg,1)
+      process_file(arg[1], not nil)
+   end
+   if arg[1]=="-d" then 
+      table.remove(arg,1)
+      DELIMITER = ( arg[1]=="\\t" and "\t" or arg[1])
+   end
+   if arg[1]=="-h" then 
+      for k,v in ipairs (help) do print(v) end; return      
+   end
+   if arg[1]=="-v" then 
+      print ("version "..VERSION); return     
+   end
+   if arg[1]=="-Q" then 
+      print (); os.exit(); return     
+   end
+   table.remove(arg,1)
+end
+
 if TABLE then
    process_table(CONNECTORS, DELIMITER, INFILE)
 else
-   if PROMPT then io.write(SCRIPT.." version "..VERSION) end
-   if DEBUG  then warn("   DEBUG MODE\n") end
-   if PROMPT then print() end
-   if MASK   then print("\27[H\27[J") end
-   if INFILE then 
-      local temp = io.input()
-      process_infile(INFILE) 
-      io.close(INFILE)
-      io.input(temp)
-   end
    if MASK then 
+      print ("\27[H\27[J")
       loop() 
    else  
+      if PROMPT then print (SCRIPT.." version "..VERSION) end
       process_stdin()
    end
 end

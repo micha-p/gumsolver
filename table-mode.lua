@@ -5,11 +5,7 @@ function process_record (c, rec)
    end
 end
 
-function process_column(c, colname)
-   local function new()
-      c[colname]=make_connector(colname)
-      return c[colname]
-   end
+function process_headerfield(c, colname)
 return colname:match("%+%-$") 
        or 
        colname:match("±$") 
@@ -18,7 +14,7 @@ return colname:match("%+%-$")
        or 
        colname:match ("=") and process_line(colname)
        or
-       new(colname)
+       ensure_symbol(colname)
 end
 
 function print_result (colnames) 
@@ -39,10 +35,10 @@ return r
 end
 
 function process_table(c, DELIMITER, filehandle)
-   records,header,colnames=csv_read(DELIMITER, filehandle)
-   for col, colname in ipairs(header) do process_column(c, colname) end 
+   records,header,colnames = csv_read(DELIMITER, filehandle)
+   for col, colname in ipairs(header) do process_headerfield(c, colname) end 
    if DEBUG then 
-      for name,connector in pairs(c) do probe2stderr(name,connector) end
+      for name,connector in pairs(c) do ensure_symbol_and_probe (name, connector) end
       io.stderr:write (SCRIPT.." version "..VERSION.. "   TABLE MODE  Separator:")
       io.stderr:write ((DELIMITER == "\t") and "TAB" 
                        or

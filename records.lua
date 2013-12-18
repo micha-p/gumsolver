@@ -10,7 +10,7 @@ function print_record()
    for i,n in ipairs(sorted) do
       v=CONNECTORS[n] 
       if TABLE or RECORD then 
-         if DEBUG then orange (PRINT16(n), v.value() and PRINT(v.get()) or "") end
+         if DEBUG then warn (PRINT16(n), v.value() and PRINT(v.get()) or "") end
       else
          if not MUTE then print (PRINT16(n), v.value() and PRINT(v.get()) or "") end
       end
