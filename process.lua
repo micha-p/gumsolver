@@ -14,8 +14,7 @@ function process_line (input)
    local expr=extract_expr(input)
    local val
 
-   if not input then return end
-   if input=="" then return end
+   if not input or input=="" then return end
    if not name  then error ("Name not recognized:"..input.."$") return end
    if MASK then reservemaskline(name, nil, unit) end
 
@@ -56,7 +55,7 @@ function process_line (input)
 end
 
 function process_directive(line)
-   local function set (v)
+   local function setrelative (v)
       RELATIVE=v
       return not nil
    end
@@ -80,7 +79,7 @@ function process_directive(line)
       or
       line:find("^#U") and (readunit (rest) or not nil)
       or
-      line:find("^#A") and set (nil)
+      line:find("^#A") and setrelative (nil)
       or
       line:find("^#I") and process_include(arg)
       or
@@ -88,7 +87,7 @@ function process_directive(line)
       or
       line:find("^#RECO?R?D?") and record_connectors()
       or
-      line:find("^#R") and set(not nil)
+      line:find("^#R") and setrelative(not nil)
       or
       line:find("^#TRA?C?E?") and trace(tonumber(line:match("^#TRA?C?E?%s+([%S]+)")))
       or

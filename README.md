@@ -36,6 +36,23 @@ cat demo/tableformula.txt | ./gumsolver -d "\t" -t
 ./gumsolver -d , -t -f demo/tableformula.csv  
 rlwrap ./gumsolver -I
 
+## Modes of operation
+
+As default, gumsolver works in a *pipe* mode, accepting input from standard input and sending the evaluated results to standard output. Several other modes affect input as well as output and might be suitably combined. 
+
+When any input files are given as argument, the program will evaluate these files subsequently until an explicit or implicit end of file is encountered within these files. After processing all arguments, the program will wait for additional input, if it works in an *interactive* mode, and terminate otherwise. Such interactions can be made either in *prompt* mode, which might be supported by a readline wrapper, or in *mask* mode, where output will update a nonscrolling table.
+
+Input can be supplied line by line, either in a stream, from a file or at the command line prompt. In addition there is a *table* mode, where input might be given as lines of records. Finally, output can be switched to *record* mode as well, so it is possible to obtain an updated version of a table with missing cells. 
+
+These normal modes of operation can be complemented by additional information on the standard error port. In *debug* mode, where all input is further explained and in *trace* mode, where all changes in state are encountered.
+
+
+
+## Command line and arguments
+
+Arguments given on the command line are evaluated from left to right and it is possible to use switches and file input multiple times. Options and directives are as close as possible to the same directives except for the leading character (TODO) and the additional options for showing help and version.
+
+
 ## Commands for interactions and pipelined files
 
 	a=12      Assign value
@@ -83,7 +100,7 @@ a=b+c &emsp; a=b\*c &emsp; a=b\*(c-d) &emsp; ...
 Functions(TODO):  
 f(x) = 2 * x + 1
 
-### Special commands
+### Special commands and commandline arguments
 
 It is possible to submit special directives following a hash sign at the beginning of the line. 
 In many cases, the first letter is distinctive.

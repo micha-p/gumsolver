@@ -26,6 +26,7 @@ DELIMITER="\t"
 RECORD=nil
 DEBUG=nil
 MASK=nil
+INFILE=nil
 TRACE=nil
 RECORDS={}			-- number : record
 DEFINITIONS={}			-- number : string
@@ -37,33 +38,33 @@ function printprobe (name, value, unit)
    if MASK then printmaskline (name, value, unit) end
    if DEBUG then warn (PRINT16 (name), PRINT16 (unit or ""), value) end
    if TRACE then warn (short(CONNECTORS[name]), PRINT16 (name), PRINT16 (unit or ""), value) end
-   if not MUTE then print (PRINT16 (name), PRINT16 (unit or ""), value) end
+   if not MUTE and not MASK then print (PRINT16 (name), PRINT16 (unit or ""), value) end
 end
     
 
 
 help={}
 help[ 1]="gumsolver -- resolving equations by propagation of uncertainties"
-help[ 2]="usage:    gumsolver [options] [-f file]"
-help[ 3]="options:  -f file        use file for input"
-help[ 4]="          -t             read input horizontally as tables"
+help[ 2]="usage:    gumsolver [options]"
+help[ 3]="options:  -h             show help and terminate"
+help[ 4]="          -v		   show version and terminate"
 help[ 5]="          -d delimiter   field separator for input"
-help[ 6]="          -a             start displaying absolute uncertainties (default)"
-help[ 7]="          -r             start displaying relative uncertainties"
-help[ 8]="          -D             debug messages (stderr)"
-help[ 9]="          -T             trace signals (stderr)"
+help[ 6]="          -a             display absolute uncertainties (default)"
+help[ 7]="          -r             display relative uncertainties"
+help[ 8]="          -D             debug messages to stderr (toggle)"
+help[ 9]="          --TRACE        trace signals to stderr (toggle)"
 help[10]="          -R             Restrict output to records"
 help[11]="          -I             interactive (readline wrapper suggested)"
 help[12]="          -J             interactive (nonscrolling mask)"
-help[12]="          -Q             exit now"
-help[13]="          -v             display version"
+help[12]="          -Q             stop working and exit"
+help[13]="          --VERSION      display version"
 help[14]="          -q             restrict standard output to special commands"
-help[15]="          -h             this help"
+help[15]="          -f file        use file for input"
 
 
-function process_include(f, toplevel)
+function process_include(f)
    if DEBUG then warn("INCLUDE\t",f,"\n") end
-return process_file(f, toplevel)
+return process_file(f)
 end
 
 function process_file(f, toplevel)
@@ -104,17 +105,31 @@ end
 
 -- START
 
+
 while arg and arg[1] do
-   TRACE    = TRACE    or arg[1]=="-T"
-   TABLE    = TABLE    or arg[1]=="-t"
-   PROMPT   = PROMPT   or arg[1]=="-I" and "> "
-   DEBUG    = DEBUG    or arg[1]=="-D"
-   MASK     = MASK     or arg[1]=="-J"
-   RECORD   = RECORD   or arg[1]=="-R"
-   MUTE     = MUTE     or arg[1]=="-q"
-   RELATIVE = RELATIVE or arg[1]=="-r" or arg[1]=="-a" and nil
+
+   TRACE    = TRACE    or arg[1]=="--TRACE" and not TRACE
+   TABLE    = TABLE    or arg[1]=="-t"      and not TABLE
+   DEBUG    = DEBUG    or arg[1]=="-D"      and not DEBUG
+   RECORD   = RECORD   or arg[1]=="-R"      and not RECORD
+   MUTE     = MUTE     or arg[1]=="-q"      and not MUTE
+   RELATIVE = RELATIVE or arg[1]=="-R" or arg[1]=="-A" and nil
+
+   if arg[1]=="-I" then 
+      table.remove(arg,1)
+      print (SCRIPT.." version "..VERSION)
+      print()
+      print()
+      PROMPT = "> "
+   end
+   if arg[1]=="-J" then 
+      table.remove(arg,1)
+      print ("\27[H\27[J")
+      MASK = not nil
+   end
    if arg[1]=="-f" then 
       table.remove(arg,1)
+      INFILE = not nil
       process_file(arg[1], not nil)
    end
    if arg[1]=="-d" then 
@@ -133,16 +148,16 @@ while arg and arg[1] do
    table.remove(arg,1)
 end
 
-if TABLE then
-   process_table(CONNECTORS, DELIMITER, INFILE)
-else
-   if MASK then 
-      print ("\27[H\27[J")
-      loop() 
-   else  
-      if PROMPT then print (SCRIPT.." version "..VERSION) end
+if MASK then
+   loop()
+elseif not INFILE then
+   if TABLE then
+      process_table(CONNECTORS, DELIMITER)
+   else
       process_stdin()
    end
+elseif PROMPT then 
+   process_stdin()
 end
 
 

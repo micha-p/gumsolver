@@ -3,8 +3,8 @@
 function vfast (v, D2, d2)
    local r={}
    r.v  = v
-   r.D2 = D2 or d2 and ( d2^0.5 * v )^2 or 0
-   r.d2 = d2 or D2 and ( D2^0.5 / v )^2 or 0
+   r.D2 = D2 or (d2 and ( d2^0.5 * v )^2) or 0
+   r.d2 = d2 or (D2 and ( D2^0.5 / v )^2) or 0
 
    r.rel = function () return r.v .. " ± " .. 100 * math.sqrt(r.d2) .. "%" end
    r.abs = function () return r.v .. " ± " .. math.sqrt(r.D2) end
@@ -18,28 +18,28 @@ function vadd (a, b)    return vfast (a.v + b.v , a.D2 + b.D2, nil) end
 function vsub (a, b)    return vfast (a.v - b.v , a.D2 + b.D2, nil) end
 function vmul (a, b)    return vfast (a.v * b.v , nil, a.d2 + b.d2) end
 function vdiv (a, b)    return vfast (a.v / b.v , nil, a.d2 + b.d2) end
-function vamp (a, s)    return vnew  (a.v * s ,  nil, a.d2)                                          end    -- relative error identical
+function vamp (a, s)    return vfast (a.v * s ,  nil, a.d2)                                          end    -- relative error identical
 function vsqu (a, b)    return vnew  (a.v ^ 2 ,  a.D2 == 0 and 0, a.D2 ~= 0 and a.d2^0.5 * 2   or 0) end    -- relative error doubled
 function vsqr (a, b)    return vnew  (a.v ^ 0.5, a.D2 == 0 and 0, a.D2 ~= 0 and a.d2^0.5 * 0.5 or 0) end    -- relative error halfed
 
 
 function vreader (str)
- local sp="%s*"
+ local space="%s*"
  local num="-?[%d_]*%.?[%d_]*"
  local err="[%+%-%±]*"
  local rel="%%?"
  local v,s,e,r
  
  function make (val,err,rflag)
-    return vnew (val, (not rflag) and err or nil, rflag and err and err/100 or nil)
+     return vnew (val, (not rflag) and err, rflag and err and err/100)
  end
 
- v= string.match(str,sp.."("..num..")"..sp..err..sp..num..sp..rel)
- s= string.match(str,sp..num..sp.."("..err..")"..sp..num..sp..rel)
- e= string.match(str,sp..num..sp..err..sp.."("..num..")"..sp..rel)
- r= string.match(str,sp..num..sp..err..sp..num..sp.."("..rel..")")
+ v= string.match(str, space.."("..num..")"..space..err..space..num..space..rel)
+ s= string.match(str, space..num..space.."("..err..")"..space..num..space..rel)
+ e= string.match(str, space..num..space..err..space.."("..num..")"..space..rel)
+ r= string.match(str, space..num..space..err..space..num..space.."("..rel..")")
 
--- print (v,"|", s,"|",e,"|",r)
+-- warn (v,"|", s,"|",e,"|",r)
  return make(tonumber(v:gsub("_",""),10) or error("error while parsing as value with uncertainty: "..str),
              tonumber(e:gsub("_",""),10) or nil,
              r=="%")

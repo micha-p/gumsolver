@@ -48,8 +48,8 @@ function reservemaskline(name, value, unit)
    if not line then 
       table.insert(MASKARRAY,name)
       MASKTABLE[name] = #MASKARRAY
-      printmaskline (name, ".", unit)
    end
+   printmaskline (name, ".", unit)
 end
 
 function printrawmaskline (string)
