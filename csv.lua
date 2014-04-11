@@ -4,7 +4,7 @@
 function csv_read(separator,filehandle)
    local sep = separator or ","
    io.input(filehandle)
-   local rheader=csv_process_line(assert(io.read(), sep))
+   local rheader=csv_process_line(io.read(), sep)
    local rtable={}
    local header={}
 
@@ -42,7 +42,7 @@ function csv_process_line (str, sep)
           if not closing then error('closing " not found') end
           local entry = string.gsub(string.sub (str, pos+1, closing), '""', '"')
           table.insert(t, entry)
-          pos = str:find(sep, closing) + 2
+          pos = str:find(sep, closing) + 1
         else 
           local ending = str:find(sep, pos)
           table.insert(t, str:sub(pos, ending-1))
