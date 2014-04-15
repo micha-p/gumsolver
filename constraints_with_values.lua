@@ -1,4 +1,3 @@
-require 'display'
 require 'constraints'
 require 'values'
 
@@ -8,6 +7,8 @@ MUL = vmul
 DIV = vdiv
 SQU = vsqu
 SQR = vsqr
+EXP = vexp
+LOG = vlog
 
 -- GLOBALS
 EQUAL   = function (a,b) return a.v == b.v and a.D2 == b.D2 end 
@@ -17,7 +18,6 @@ PRINT   = function (r) return r and (PRINTV(r) ..  " ± " .. PRINTE(r)) or "." e
 PRINT16 = function (r) return string.format("%-15.15s",r) end
 
 --[[
-
 C = make_connector()
 F = cadd (cmul (cdiv(cval(vnew(9)),cval(vnew(5))) , C) , cval(vnew(32)))
 K = csub (C, cval (vnew(-273.15)))
@@ -41,4 +41,23 @@ R.set("user", vnew(0))
 R.forget("user")
 C.set("user", vnew(100,1))
 --]]
+
+--[[
+A = make_connector()
+B = cexp (A)
+C = clog (B)
+probe ("A", A)
+probe ("B", B)
+probe ("C", C)
+
+
+A.set ("user", vnew(1))
+A.forget ("user")
+A.set ("user", vnew(2))   -- e^2 = 7.38905609893
+A.forget ("user")
+A.set ("user", vnew(10))   -- e^10 = 22026.4657948
+
+--]]
+
+
 

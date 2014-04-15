@@ -18,6 +18,8 @@ DIV = function(a,b) return a/b  end
 SQU = function(a)   return a^2  end
 SQR = function(a)   return a^.5 end
 RET = function(a)   return a    end
+EXP = function(a)   return math.exp(a) end
+LOG = function(a)   return math.log(a) end
 
 PRINT16 = function (a) return a end
 PRINT   = function (a) return a end
@@ -91,7 +93,7 @@ end
 
 
 function printprobe (name, value)
-   print (PRINT16 (name, value))
+   print (PRINT16 (name), PRINT16 (value))
 end
 
 
@@ -163,6 +165,8 @@ function cmul(x,y) local z=make_connector(); constraint(x, y, z, MUL, DIV); retu
 function cdiv(x,y) local z=make_connector(); constraint(z, y, x, MUL, DIV); return z end
 function csqu(x  ) local z=make_connector(); pipe      (x,    z, SQU, SQR); return z end 
 function csqr(x  ) local z=make_connector(); pipe      (x,    z, SQR, SQU); return z end 
+function cexp(x  ) local z=make_connector(); pipe      (x,    z, EXP, LOG); return z end 
+function clog(x  ) local z=make_connector(); pipe      (x,    z, LOG, EXP); return z end 
 function cret(x  ) local z=make_connector(); pipe      (x,    z, RET, RET); return z end 
 function cval(v  ) local z=make_connector(); constant  (z,v);               return z end 
 
@@ -173,6 +177,8 @@ function RATIO (x,y,r) return PROD (y,r,x) end
 function CONST (x,v)   return constant (x, v) end
 function SQUARE(x,y)   return pipe   (x,y, SQU, SQR) end
 function SQROOT(x,y)   return SQUARE (y,x)  end
+function FNEXP(x,y)    return pipe   (x,y, EXP, LOG) end
+function FNLOG(x,y)    return pipe   (x,y, LOG, EXP) end
 
 --[[
 C = make_connector()
@@ -197,8 +203,22 @@ R.forget("user")
 R.set("user", 0)
 R.forget("user")
 C.set("user", 100)
-
-
 --]]
 
+--[[
+A = make_connector()
+B = cexp (A)
+C = clog (B)
+probe ("A", A)
+probe ("B", B)
+probe ("C", C)
+
+
+A.set ("user", 1)
+A.forget ("user")
+A.set ("user", 2)   -- e^2 = 7.38905609893
+A.forget ("user")
+A.set ("user", 10)   -- e^10 = 22026.4657948
+
+--]]
 

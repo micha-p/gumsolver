@@ -13,6 +13,8 @@ emul=function(x,y,z) c=PROD  (x,y,z);c["info"]="*";table.insert(CONSTRAINTS,c);r
 ediv=function(x,y,z) c=RATIO (x,y,z);c["info"]="/";table.insert(CONSTRAINTS,c);return z end
 esqu=function(x,  z) c=SQUARE(x,z);  c["info"]="²";table.insert(CONSTRAINTS,c);return z end
 esqr=function(x,  z) c=SQROOT(x,z);  c["info"]="®";table.insert(CONSTRAINTS,c);return z end
+eexp=function(x,  z) c=FNEXP(x,z);   c["info"]="€";table.insert(CONSTRAINTS,c);return z end
+elog=function(x,  z) c=FNLOG(x,z);   c["info"]="ł";table.insert(CONSTRAINTS,c);return z end
 eval=function(  v,z) c=CONST (z,v  );c["info"]="=";table.insert(CONSTRAINTS,c);return z end
 
 function run (connectortable, connector, val , abs , rel) 
@@ -58,6 +60,10 @@ function EVAL(expr, rootconnector)
           infix=="*" and emul (op1, op2, root)
           or
           infix=="/" and ediv (op1, op2, root)
+          or
+          infix=="e" and eexp (op2, root)
+          or
+          infix=="l" and elog (op2, root)
           or
           infix=="^" and op2==2 and esqu (op1, root)
           or

@@ -1,10 +1,10 @@
 -- estimate, square of absolute uncertainty, square of relative uncertainty
 
-function vfast (v, D2, d2)
+function vfast (v, squared_abs_error, squared_rel_error)
    local r={}
    r.v  = v
-   r.D2 = D2 or (d2 and ( d2^0.5 * v )^2) or 0
-   r.d2 = d2 or (D2 and ( D2^0.5 / v )^2) or 0
+   r.D2 = squared_abs_error or (squared_rel_error and ( squared_rel_error^0.5 * v )^2) or 0
+   r.d2 = squared_rel_error or (squared_abs_error and ( squared_abs_error^0.5 / v )^2) or 0
 
    r.rel = function () return r.v .. " ± " .. 100 * math.sqrt(r.d2) .. "%" end
    r.abs = function () return r.v .. " ± " .. math.sqrt(r.D2) end
@@ -12,15 +12,22 @@ function vfast (v, D2, d2)
    return r
 end
 
+-- vfast <= squared errors
+-- vnew  <= unsquared errors
+
 function vnew (v, D, d) return vfast( v , D and D^2, d and d^2) end
 function vinv (a)       return vfast (- a.v, a.D2, a.d2) end 
+function vrec (a)       return vfast (1/a.v, nil , a.d2) end 
 function vadd (a, b)    return vfast (a.v + b.v , a.D2 + b.D2, nil) end 
 function vsub (a, b)    return vfast (a.v - b.v , a.D2 + b.D2, nil) end
 function vmul (a, b)    return vfast (a.v * b.v , nil, a.d2 + b.d2) end
 function vdiv (a, b)    return vfast (a.v / b.v , nil, a.d2 + b.d2) end
-function vamp (a, s)    return vfast (a.v * s ,  nil, a.d2)                                          end    -- relative error identical
-function vsqu (a, b)    return vnew  (a.v ^ 2 ,  a.D2 == 0 and 0, a.D2 ~= 0 and a.d2^0.5 * 2   or 0) end    -- relative error doubled
-function vsqr (a, b)    return vnew  (a.v ^ 0.5, a.D2 == 0 and 0, a.D2 ~= 0 and a.d2^0.5 * 0.5 or 0) end    -- relative error halfed
+function vamp (a, s)    return vfast (a.v * s ,  nil, a.d2)                                              end    -- relative error identical
+function vsqu (a)       return vnew  (a.v ^ 2 ,      a.D2 == 0 and 0, a.D2 ~= 0 and a.d2^0.5 * 2   or 0) end    -- relative error doubled
+function vcub (a)       return vnew  (a.v ^ 3 ,      a.D2 == 0 and 0, a.D2 ~= 0 and a.d2^0.5 * 3   or 0) end    -- relative error three times
+function vsqr (a)       return vnew  (a.v ^ 0.5,     a.D2 == 0 and 0, a.D2 ~= 0 and a.d2^0.5 / 2   or 0) end    -- relative error halfed
+function vexp (a)       return vnew  (math.exp(a.v), a.D2^0.5 * math.exp(a.v) or 0) end                         -- absolute error multiplied
+function vlog (a)       return vnew  (math.log(a.v), a.D2^0.5 / a.v or 0) end                                   -- absolute error divided
 
 
 function vreader (str)
@@ -92,4 +99,6 @@ a=vnew(0.99,nil, 0.05) ; s=vsub(a, vnew (1))
 print(a.abs(), a.rel(), s.abs(), s.rel())
 a=vnew(0.99,nil, 0.10) ; s=vsub(a, vnew (1))
 print(a.abs(), a.rel(), s.abs(), s.rel())
-]]
+--]]
+
+
