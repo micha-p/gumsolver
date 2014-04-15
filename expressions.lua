@@ -11,6 +11,7 @@ eadd=function(x,y,z) c=SUM   (x,y,z);c["info"]="+";table.insert(CONSTRAINTS,c);r
 esub=function(x,y,z) c=DIFF  (x,y,z);c["info"]="-";table.insert(CONSTRAINTS,c);return z end
 emul=function(x,y,z) c=PROD  (x,y,z);c["info"]="*";table.insert(CONSTRAINTS,c);return z end
 ediv=function(x,y,z) c=RATIO (x,y,z);c["info"]="/";table.insert(CONSTRAINTS,c);return z end
+emin=function(x,y,z) c=FNMIN (x,y,z);c["info"]="_";table.insert(CONSTRAINTS,c);return z end
 esqu=function(x,  z) c=SQUARE(x,z);  c["info"]="²";table.insert(CONSTRAINTS,c);return z end
 esqr=function(x,  z) c=SQROOT(x,z);  c["info"]="®";table.insert(CONSTRAINTS,c);return z end
 eexp=function(x,  z) c=FNEXP(x,z);   c["info"]="€";table.insert(CONSTRAINTS,c);return z end
@@ -60,6 +61,8 @@ function EVAL(expr, rootconnector)
           infix=="*" and emul (op1, op2, root)
           or
           infix=="/" and ediv (op1, op2, root)
+          or
+          infix=="m" and emin (op1, op2, root)
           or
           infix=="e" and eexp (op2, root)
           or

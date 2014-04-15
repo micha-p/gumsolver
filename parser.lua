@@ -46,6 +46,7 @@ function parse (str)
       function operator()  return check_pattern ("[%+%-%*%/%^]") end  
       function exp()       return check_pattern ("exp ?%(") end  
       function log()       return check_pattern ("ln ?%(") end 
+      function min()       return check_pattern ("min ?%(") end 
       function variable()  return check_pattern (NAMEPATTERN) end  
       function number()    return extract_number( check_pattern (NUMBERPATTERN)) end 
       function operand()   return func() or variable() or number() or subexpression() or nil end
@@ -58,6 +59,18 @@ function parse (str)
          return s
       end
    
+      function dualfunc (symbol)
+         skipspace()
+         local a = operand()
+         skipspace()
+         check_pattern(",")
+         skipspace()
+         local b = operand()
+         skipspace()
+         if not closing() then error("closing bracket for argument list: "..symbol.." "..str) end
+         return {a, symbol, b}
+      end
+
       function func()
          if exp() then
             s, newpos = expression (str, pos, len, level+1)
@@ -67,6 +80,8 @@ function parse (str)
             s, newpos = expression (str, pos, len, level+1)
             pos = newpos
             return {1, "l", s}
+         elseif min() then
+            return dualfunc("m")
          end
       end
    
@@ -81,7 +96,7 @@ function parse (str)
          e[i]=operand()
          skipspace()
       end
-      if level>1 and not closing() then error("closing bracket missing before end: "..str) end
+      if level>1 and not closing() then error("closing bracket missing: "..str) end
       if level==1 and closing() then error("too many closing brackets: "..str) end
       return #e==1 and e[1] or e , pos
    end
@@ -134,7 +149,7 @@ function order (expr)
    end
 end
 
---[[
+---[[
 dofile("include/display.lua")
 
 display=write
@@ -166,5 +181,8 @@ display (parse "exp( exp(a) + exp(b))")
 display (parse "exp(exp(a)+exp(b))")
 display (parse "1 + exp(a+b) + ln(c)")
 
+print()
+display (parse "min(a,b)")
+display (parse "min(a,min(b,c))")
 
 --]]

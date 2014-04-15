@@ -15,6 +15,8 @@ ADD = function(a,b) return a+b  end
 SUB = function(a,b) return a-b  end 
 MUL = function(a,b) return a*b  end 
 DIV = function(a,b) return a/b  end
+MIN = function(a,b) return math.min(a,b) end
+LIM = function(r,x) if (r>x) then print (PRINT16 ("EXCEEDING LIMIT!") , PRINT (r) , PRINT (x)) else return r end end
 SQU = function(a)   return a^2  end
 SQR = function(a)   return a^.5 end
 RET = function(a)   return a    end
@@ -54,6 +56,9 @@ function pipe (a, r, op1, op2)
   return me
 end
 
+-- a op1 b -> r
+-- r op2 a -> b
+-- r op2 b -> a 
 function constraint (a, b, r, op1, op2)  
    local me = {}
    local actors = {a,b,r}
@@ -163,6 +168,7 @@ function cadd(x,y) local z=make_connector(); constraint(x, y, z, ADD, SUB); retu
 function csub(x,y) local z=make_connector(); constraint(z, y, x, ADD, SUB); return z end
 function cmul(x,y) local z=make_connector(); constraint(x, y, z, MUL, DIV); return z end
 function cdiv(x,y) local z=make_connector(); constraint(z, y, x, MUL, DIV); return z end
+function cmin(x,y) local z=make_connector(); constraint(x, y, z, MIN, LIM); return z end
 function csqu(x  ) local z=make_connector(); pipe      (x,    z, SQU, SQR); return z end 
 function csqr(x  ) local z=make_connector(); pipe      (x,    z, SQR, SQU); return z end 
 function cexp(x  ) local z=make_connector(); pipe      (x,    z, EXP, LOG); return z end 
@@ -177,8 +183,9 @@ function RATIO (x,y,r) return PROD (y,r,x) end
 function CONST (x,v)   return constant (x, v) end
 function SQUARE(x,y)   return pipe   (x,y, SQU, SQR) end
 function SQROOT(x,y)   return SQUARE (y,x)  end
-function FNEXP(x,y)    return pipe   (x,y, EXP, LOG) end
-function FNLOG(x,y)    return pipe   (x,y, LOG, EXP) end
+function FNEXP (x,y)   return pipe   (x,y, EXP, LOG) end
+function FNLOG (x,y)   return pipe   (x,y, LOG, EXP) end
+function FNMIN (x,y,m) return constraint(x, y, m, MIN, LIM); end
 
 --[[
 C = make_connector()
@@ -213,7 +220,6 @@ probe ("A", A)
 probe ("B", B)
 probe ("C", C)
 
-
 A.set ("user", 1)
 A.forget ("user")
 A.set ("user", 2)   -- e^2 = 7.38905609893
@@ -222,3 +228,24 @@ A.set ("user", 10)   -- e^10 = 22026.4657948
 
 --]]
 
+--[[
+A = make_connector()
+B = make_connector()
+M = cmin(A,B)
+probe ("A", A)
+probe ("B", B)
+probe ("MIN", M)
+
+A.set ("user", 1)
+B.set ("user", 2)
+B.forget ("user")
+A.forget ("user")
+B.set ("user", 3)
+M.set ("user", 2) --> A = 2
+M.forget ("user")
+M.set ("user", 4) --> Error
+M.forget ("user")
+B.forget ("user")
+A.set ("user", 5)
+M.set ("user", 0) --> B = 0
+--]]

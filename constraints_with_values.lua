@@ -9,6 +9,8 @@ SQU = vsqu
 SQR = vsqr
 EXP = vexp
 LOG = vlog
+MIN = vmin
+LIM = vlim
 
 -- GLOBALS
 EQUAL   = function (a,b) return a.v == b.v and a.D2 == b.D2 end 
@@ -50,14 +52,33 @@ probe ("A", A)
 probe ("B", B)
 probe ("C", C)
 
-
 A.set ("user", vnew(1))
 A.forget ("user")
 A.set ("user", vnew(2))   -- e^2 = 7.38905609893
 A.forget ("user")
 A.set ("user", vnew(10))   -- e^10 = 22026.4657948
-
 --]]
 
+--[[
+A = make_connector()
+B = make_connector()
+M = cmin(A,B)
+probe ("A", A)
+probe ("B", B)
+probe ("MIN", M)
+
+A.set ("user", vnew(1))
+B.set ("user", vnew(2))
+B.forget ("user")
+A.forget ("user")
+B.set ("user", vnew(3))
+M.set ("user", vnew(2)) --> A = 2
+M.forget ("user")
+M.set ("user", vnew(4)) --> Error
+M.forget ("user")
+B.forget ("user")
+A.set ("user", vnew(5))
+M.set ("user", vnew(0)) --> B = 0
+--]]
 
 

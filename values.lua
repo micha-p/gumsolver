@@ -28,6 +28,8 @@ function vcub (a)       return vnew  (a.v ^ 3 ,      a.D2 == 0 and 0, a.D2 ~= 0 
 function vsqr (a)       return vnew  (a.v ^ 0.5,     a.D2 == 0 and 0, a.D2 ~= 0 and a.d2^0.5 / 2   or 0) end    -- relative error halfed
 function vexp (a)       return vnew  (math.exp(a.v), a.D2^0.5 * math.exp(a.v) or 0) end                         -- absolute error multiplied
 function vlog (a)       return vnew  (math.log(a.v), a.D2^0.5 / a.v or 0) end                                   -- absolute error divided
+function vmin (a, b)    return (a.v < b.v) and a or b end
+function vlim (r, x)    if (r.v>x.v) then print ("EXCEEDING MINIMUM!", r.abs() , x.abs()) else return r end end
 
 
 function vreader (str)
@@ -101,4 +103,14 @@ a=vnew(0.99,nil, 0.10) ; s=vsub(a, vnew (1))
 print(a.abs(), a.rel(), s.abs(), s.rel())
 --]]
 
-
+--[[
+A = vnew(3,1)
+B = vnew(2,0.5)
+M = vmin(A,B)
+print(M.abs())
+L = vlim(M,B)
+print(L.abs())
+M = vnew(100)
+L = vlim(M,A)
+print(L.abs())
+--]]
