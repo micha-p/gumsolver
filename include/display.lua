@@ -63,7 +63,7 @@ tabulate = function (t, ...)
          io.stdout:flush()
          io.write(display1(v))
          io.stdout:flush()
-         dummy = k==t.n or io.write(" ")
+         dummy = (k==t.n) or io.write(" ")
       end
       io.write ("}")
       return not nil
@@ -96,7 +96,7 @@ write = function (t, ...)
       for k,v in pairs(t) do 
          io.write(display1(v))
          io.stdout:flush()
-         dummy = k==t.n or io.write(" ")
+         dummy = (k==#t) or io.write(" ")
       end
       io.write (")")
       return not nil
@@ -129,7 +129,7 @@ display = function (t, ...)
       for k,v in pairs(t) do 
          io.write(display1(v))
          io.stdout:flush()
-         dummy = k==t.n or io.write(" ")
+         dummy = (k==#t) or io.write(" ")
       end
       io.write (")")
       return not nil
@@ -143,7 +143,7 @@ display = function (t, ...)
       or
       lambdatest(t) and tostring(t)
       or
-      tabletest(t)  and displayT(t) and ""
+      tabletest(t)  and displayH(t) and ""
       or
       t and "not nil" -- PRAGMA
       or

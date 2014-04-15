@@ -5,7 +5,7 @@ dimensions are annoying!!!
 possibilities: 
 
 - special connectors for scales => twice as much connectors
-- scientif notation => annoying during input
+- scientific notation => annoying during input
 
 Best solution: scaled probes during declaration!
 

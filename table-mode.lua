@@ -1,7 +1,14 @@
-function process_record (c, rec)
-   run(c)
-   for name,connector in pairs(c) do 
-      run (c, connector, rec[name], not rec[name.."%"] and (rec[name.."+-"] or rec[name.."±"]), rec[name.."%"] and rec[name.."%"]/100) 
+function clear_tableline (c, columns)
+   for n,name in pairs(columns) do 
+      if DEBUG then warn("CLEAR "..name) end
+      run (c, c[name])
+   end
+end
+
+function process_tableline (c, columns, rec)
+   for name, value in pairs(columns) do 
+      if DEBUG then warn("SET "..name.."="..value) end
+      run (c, c[name], vreader(value)) 
    end
 end
 
@@ -17,13 +24,13 @@ return colname:match("%+%-$")
        ensure_symbol(colname)
 end
 
-function print_result (colnames) 
+function print_resulting_tableline (colnames) 
    local con,value,check
    local r={}
    for k,v in ipairs(colnames) do 
       con=CONNECTORS[v]
       gen=CONNECTORS[v:match("(.*)%+%-$") or v:match("(.*)±$") or v:match("(.*)%%$")]
-      r[k] = con and con.value() and best(con.get()["v"],4)
+      r[k] = con and con.value() and PRINT(con.get())
              or 
              gen and gen.value() and v:find("%%$") and best(math.sqrt(gen.get()["d2"])*100,2) 
              or 
@@ -34,11 +41,11 @@ function print_result (colnames)
 return r
 end
 
-function process_table(c, DELIMITER, filehandle)
+function process_table(connectortable, DELIMITER, filehandle)
    records,header,colnames = csv_read(DELIMITER, filehandle)
    for col, colname in ipairs(header) do process_headerfield(c, colname) end 
    if DEBUG then 
-      for name,connector in pairs(c) do ensure_symbol_and_probe (name, connector) end
+      for name,connector in pairs(connectortable) do ensure_symbol_and_probe (name, connector) end
       io.stderr:write (SCRIPT.." version "..VERSION.. "   TABLE MODE  Separator:")
       io.stderr:write ((DELIMITER == "\t") and "TAB" 
                        or
@@ -47,11 +54,12 @@ function process_table(c, DELIMITER, filehandle)
                        DELIMITER) 
       io.stderr:write ("      DEBUGGING TO STDERR\n\n")
    end
-   print(unpack(header))
+
+   print(unpack(table.map(colnames,function(x) return PRINT16(x) end)))
    for line, record in ipairs(records) do 
-      process_record (c, record)
-      r= print_result(colnames)
+      clear_tableline(connectortable, colnames)
+      process_tableline (connectortable, record)
+      r= print_resulting_tableline(colnames)
       print(unpack(r))
-      print_record()
    end
 end

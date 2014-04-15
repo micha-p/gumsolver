@@ -71,15 +71,13 @@ function process_directive(line)
    local arg  = line:match("^#[A-Z]+%s+([%S]+)")
    local rest = line:match("^#[A-Z]+%s+(.*)$")
    return 
-      line:find("^#P") and (TABLE or RECORD) and  warn (line:match("^!PR?I?N?T? (.*)$") or "")
+      line:find("^#P") and (TABLE or RECORD) and  warn (line:match("^#PR?I?N?T? (.*)$") or "")
       or
-      line:find("^#P") and MASK and printfullmaskline (rest)
+      line:find("^#P") and MASK and printfullmaskline (line:match("^#PR?I?N?T? (.*)$"))
       or
-      line:find("^#P") and (print (rest) or not nil)
+      line:find("^#P") and (print (line:match("^#PR?I?N?T? (.*)$")) or not nil)
       or
       line:find("^#U") and (readunit (rest) or not nil)
-      or
-      line:find("^#A") and setrelative (nil)
       or
       line:find("^#I") and process_include(arg)
       or
@@ -88,6 +86,8 @@ function process_directive(line)
       line:find("^#RECO?R?D?") and record_connectors()
       or
       line:find("^#R") and setrelative(not nil)
+      or
+      line:find("^#A") and setrelative (nil)
       or
       line:find("^#TRA?C?E?") and trace(tonumber(line:match("^#TRA?C?E?%s+([%S]+)")))
       or

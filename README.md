@@ -32,8 +32,8 @@ Such constraints are given as arithmetic terms building a network of equations. 
 cat demo/example.txt | ./gumsolver  
 cat demo/tableformula.txt | ./gumsolver -d "\t" -t  
 ./gumsolver -f demo/example.txt  
-./gumsolver -t -f demo/tableformula.txt  
-./gumsolver -d , -t -f demo/tableformula.csv  
+./gumsolver -t -q -f demo/tableformula.txt  
+./gumsolver -d , -t -q -f demo/tableformula.csv  
 rlwrap ./gumsolver -I
 
 ## Modes of operation
@@ -84,10 +84,6 @@ Underscores might be used to separate parts of symbols as well as parts of diffe
 
 Values and Uncertainties:  
 v+-u &emsp; v±u &emsp; v+-u% &emsp; v±u%
-
-Group of samples (TODO): 
-v=x1,x2,x3,...,xn   &emsp;  v = (x1 x2 x3 x4)
-Either a delimier indicating subsequent values or a ending is neccessary
 
 Operators:  
 \+ - * / 
