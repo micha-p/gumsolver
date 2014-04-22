@@ -89,7 +89,7 @@ function getchar()
 return char
 end
 
-function loop()
+function process_eventloop()
    local char = ""
    while char and char ~= "\004" and char ~= "q" do 
       char = getchar()

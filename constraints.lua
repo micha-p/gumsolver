@@ -99,6 +99,7 @@ end
 
 function printprobe (name, value)
    print (PRINT16 (name), PRINT16 (value))
+   io.flush()
 end
 
 

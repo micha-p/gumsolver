@@ -16,7 +16,7 @@ require 'trace'
 require 'units'
 
 
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 SCRIPT=arg and string.match(arg[0],"[^%w%-]*([%w%-]*)$")
 TABLE=nil 
 PROMPT=nil
@@ -25,6 +25,7 @@ RELATIVE=nil
 DELIMITER="\t"
 RECORD=nil
 DEBUG=nil
+ERRORS=nil
 MASK=nil
 INFILE=nil
 TRACE=nil
@@ -42,6 +43,7 @@ function printprobe (name, value, unit)
 end
     
 
+-- TODO consistant upper and lower case letters for modes
 
 help={}
 help[ 1]="gumsolver -- resolving equations by propagation of uncertainties"
@@ -61,6 +63,7 @@ help[13]="          --VERSION      display version"
 help[14]="          -q             restrict standard output to special commands"
 help[15]="          -f file        use file for input"
 help[16]="          -t		   table mode (toggle)"
+help[17]="          -E		   errors in same column"  -- TODO invert behaviour (also in DEMOfiles)
 
 
 function process_include(f)
@@ -114,19 +117,21 @@ while arg and arg[1] do
    DEBUG    = DEBUG    or arg[1]=="-D"      and not DEBUG
    RECORD   = RECORD   or arg[1]=="-R"      and not RECORD
    MUTE     = MUTE     or arg[1]=="-q"      and not MUTE
+   ERRORS   = ERRORS   or arg[1]=="-E"      and not ERRORS
    RELATIVE = RELATIVE or arg[1]=="-r" or arg[1]=="-a" and nil
 
    if arg[1]=="-I" then 
       table.remove(arg,1)
+      if INFILE then print() end
       print (SCRIPT.." version "..VERSION)
-      print()
-      print()
-      PROMPT = "> "
+      PROMPT="> "
+      process_stdin()
    end
    if arg[1]=="-J" then 
       table.remove(arg,1)
-      print ("\27[H\27[J")
       MASK = not nil
+      print ("\27[H\27[J")
+      process_eventloop()  -- TODO
    end
    if arg[1]=="-f" then 
       table.remove(arg,1)
@@ -149,13 +154,9 @@ while arg and arg[1] do
    table.remove(arg,1)
 end
 
-if MASK then
-   loop()
-elseif PROMPT then 
-   process_stdin()
-elseif not INFILE then
+if not MASK and not PROMPT and not INFILE then
    if TABLE then
-      process_table(CONNECTORS, DELIMITER)
+      process_table(CONNECTORS, DELIMITER)   --< from stdin
    else
       process_stdin()
    end

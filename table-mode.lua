@@ -30,11 +30,13 @@ function print_resulting_tableline (colnames)
    for k,v in ipairs(colnames) do 
       con=CONNECTORS[v]
       gen=CONNECTORS[v:match("(.*)%+%-$") or v:match("(.*)±$") or v:match("(.*)%%$")]
-      r[k] = con and con.value() and PRINT(con.get())
+      r[k] = ERRORS and con and con.value() and PRINT16(PRINT(get_scaled_val_from_connector(con)))
+             or
+             con and con.value() and PRINT16(best(get_scaled_val_from_connector(con)["v"],6))
              or 
-             gen and gen.value() and v:find("%%$") and best(math.sqrt(gen.get()["d2"])*100,2) 
+             gen and gen.value() and v:find("%%$") and PRINT16(best(math.sqrt(gen.get()["d2"])*100,2)) 
              or 
-             gen and gen.value() and best(math.sqrt(gen.get()["D2"]),3)
+             gen and gen.value() and PRINT16(best(math.sqrt(gen.get()["D2"]),3))
              or
              "."
    end
@@ -55,7 +57,10 @@ function process_table(connectortable, DELIMITER, filehandle)
       io.stderr:write ("      DEBUGGING TO STDERR\n\n")
    end
 
-   print(unpack(table.map(colnames,function(x) return PRINT16(x) end)))
+   for k,v in pairs(colnames) do io.write(PRINT16(v).."\t") end
+   print()
+   for k,v in pairs(colnames) do io.write(connectortable[v]["unit"].."\t") end
+   print()
    for line, record in ipairs(records) do 
       clear_tableline(connectortable, colnames)
       process_tableline (connectortable, record)

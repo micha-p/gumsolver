@@ -75,7 +75,7 @@ function process_directive(line)
       or
       line:find("^#P") and MASK and printfullmaskline (line:match("^#PR?I?N?T? (.*)$"))
       or
-      line:find("^#P") and (print (line:match("^#PR?I?N?T? (.*)$")) or not nil)
+      line:find("^#P") and (print (line:match("^#PR?I?N?T? (.*)$") or "") or not nil)
       or
       line:find("^#U") and (readunit (rest) or not nil)
       or
