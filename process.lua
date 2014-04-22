@@ -2,8 +2,9 @@ function process_input(line)
       if line:find("^#[A-Z]") then
          process_directive(line)
       else
-         -- first remove comments and then leading and trailing whitespace
-         process_line(string.match(line:match("^([^#]*)#?.*$"), "^%s*(.*)%s*$"))
+         -- first remove comments
+         -- then leading and trailing whitespace as well as closing semicolon
+         process_line(string.match(line:match("^([^#]*)#?.*$"), "^%s*(.*)%s*;?$"))
       end
 end
 
