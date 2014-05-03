@@ -1,5 +1,5 @@
---header contains formula, records do not
-
+-- header contains formula, records do not
+-- to ensure correct sequence, each record is given as an itable of fieldstrings with preceeding colname
 
 function csv_read(separator,filehandle)
    local sep = separator or ","
@@ -11,16 +11,19 @@ function csv_read(separator,filehandle)
    for k,v in ipairs(rheader) do header[k]= string.find(v,"=") and string.match(v,"%s*(.+)%s*=") or v end
    for line in io.lines() do
       local fields={}
-      for i,field in ipairs(csv_process_line(line, sep)) do
-      	 if i > #header then
-      	    error ("To many input fields, check line endings!")
-      	 else
-            fields[header[i]]=try_tonumber(field)
+      if line:find("^#[A-Z]") then
+         table.insert(rtable,line)           		-- return line string instead of table of fields
+      elseif not line:find("^# ") then			-- skip comment
+         for i,field in ipairs(csv_process_line(line, sep)) do
+       	    if i > #header then
+      	       error ("To many input fields, check line endings!")
+      	    else
+               table.insert(fields,header[i].."="..field)
+            end
          end
-      end
-      table.insert(rtable,fields)
+         table.insert(rtable,fields)
+       end
     end
-   
     return rtable,rheader,header
 end
 

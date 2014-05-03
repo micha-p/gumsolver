@@ -5,13 +5,6 @@ function clear_tableline (c, columns)
    end
 end
 
-function process_tableline (c, columns, rec)
-   for name, value in pairs(columns) do 
-      if DEBUG then warn("SET "..name.."="..value) end
-      run (c, c[name], vreader(value)) 
-   end
-end
-
 function process_headerfield(c, colname)
 return colname:match("%+%-$") 
        or 
@@ -21,7 +14,7 @@ return colname:match("%+%-$")
        or 
        colname:match ("=") and process_line(colname)
        or
-       ensure_symbol(colname)
+       process_line(colname)
 end
 
 function print_resulting_tableline (colnames) 
@@ -61,10 +54,20 @@ function process_table(connectortable, DELIMITER, filehandle)
    print()
    for k,v in pairs(colnames) do io.write(connectortable[v]["unit"] or "".."\t") end
    print()
-   for line, record in ipairs(records) do 
+   for linenumber, one_line in ipairs(records) do 
       clear_tableline(connectortable, colnames)
-      process_tableline (connectortable, record)
-      r= print_resulting_tableline(colnames)
-      print(unpack(r))
+      if stringtest(one_line) and one_line:find("^#[A-Z]") then
+         if one_line:find("^#Q") then
+            break
+         else
+            process_directive(one_line)
+         end
+      else
+         for colnum, field in ipairs(one_line) do 
+            process_line(field)
+         end
+         r= print_resulting_tableline(colnames)
+         print(unpack(r))
+      end
    end
 end
