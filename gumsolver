@@ -14,6 +14,7 @@ require 'records'
 require 'mask'
 require 'trace'
 require 'units'
+require 'optimization'
 
 
 VERSION = "0.4.0"
@@ -24,15 +25,16 @@ MUTE=nil
 RELATIVE=nil
 DELIMITER="\t"
 RECORD=nil
-DEBUG=nil
 ERRORS=nil
 MASK=nil
 INFILE=nil
-TRACE=nil
 RECORDS={}			-- number : record
 DEFINITIONS={}			-- number : string
 COLNAMES={}			-- number : string
 
+TRACE=nil
+DEBUG=nil
+ITER=nil
 
 -- overwrite !!!!
 function printprobe (name, value, unit)
@@ -53,17 +55,18 @@ help[ 4]="          -v		   show version and terminate"
 help[ 5]="          -d delimiter   field separator for input"
 help[ 6]="          -a             display absolute uncertainties (default)"
 help[ 7]="          -r             display relative uncertainties"
-help[ 8]="          -D             debug messages to stderr (toggle)"
+help[ 8]="          --DEBUG        debug messages to stderr (toggle)"
 help[ 9]="          --TRACE        trace signals to stderr (toggle)"
-help[10]="          -R             Restrict output to records"
-help[11]="          -I             interactive (readline wrapper suggested)"
-help[12]="          -J             interactive (nonscrolling mask)"
-help[12]="          -Q             stop working and exit"
-help[13]="          --VERSION      display version"
-help[14]="          -q             restrict standard output to special commands"
-help[15]="          -f file        use file for input"
-help[16]="          -t		   table mode (toggle)"
-help[17]="          -E		   errors in same column"  -- TODO invert behaviour (also in DEMOfiles)
+help[10]="          --ITER         print iterations to stderr (toggle)"
+help[11]="          -R             Restrict output to records"
+help[12]="          -I             interactive (readline wrapper suggested)"
+help[13]="          -J             interactive (nonscrolling mask)"
+help[14]="          -Q             stop working and exit"
+help[15]="          --VERSION      display version"
+help[16]="          -q             restrict standard output to special commands"
+help[17]="          -f file        use file for input"
+help[18]="          -t		   table mode (toggle)"
+help[19]="          -E		   errors in same column"  -- TODO invert behaviour (also in DEMOfiles)
 
 
 function process_include(f)
@@ -113,8 +116,9 @@ end
 while arg and arg[1] do
 
    TRACE    = TRACE    or arg[1]=="--TRACE" and not TRACE
+   ITER     = ITER     or arg[1]=="--ITER"  and not ITER
+   DEBUG    = DEBUG    or arg[1]=="--DEBUG" and not DEBUG
    TABLE    = TABLE    or arg[1]=="-t"      and not TABLE
-   DEBUG    = DEBUG    or arg[1]=="-D"      and not DEBUG
    RECORD   = RECORD   or arg[1]=="-R"      and not RECORD
    MUTE     = MUTE     or arg[1]=="-q"      and not MUTE
    ERRORS   = ERRORS   or arg[1]=="-E"      and not ERRORS

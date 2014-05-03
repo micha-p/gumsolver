@@ -32,15 +32,21 @@ function process_line (input)
             if not MASK then print (val) end
             return val
          end
-      elseif  string.find (expr, "[%a*/%(%)]") then               	-- name = expression
-         if DEBUG then warn(PRINT16(name), expr) end
-         DEFINITIONS[name]=expr
-         EVAL(order(parse(expr)), ensure_symbol_and_probe(name))
       elseif string.match (expr, "^[%s%d%.%_%±%+%-%%]*$") then    	-- name = value
          local val
          val = vreader(expr)
-         if DEBUG then warn(PRINT16(name), expr.." (user)") end
+         if DEBUG then warn(PRINT16(name), "=", expr.." (user)") end
          run (c, ensure_symbol_and_probe(name), val)
+      elseif string.match (expr, "^%s*"..NAMEPATTERN.."%s*$") then      -- name = name
+         local a = ensure_symbol_and_probe(name)
+         local b = ensure_symbol_and_probe(expr)
+         pipe (a, b, RET, RET)
+         if DEBUG then warn(PRINT16(name), "==", expr) end
+      elseif  string.find (expr, "[%a*/%+%-%(%)]") then               	-- name = expression
+         if DEBUG then warn(PRINT16(name), expr) end
+         DEFINITIONS[name]=expr
+         if DEBUG then display (order(parse(expr))) end
+         EVAL(order(parse(expr)), ensure_symbol_and_probe(name))
       else
          error ("Can't resolve right side: "..expr)
       end
@@ -93,6 +99,8 @@ function process_directive(line)
       line:find("^#TRA?C?E?") and trace(tonumber(line:match("^#TRA?C?E?%s+([%S]+)")))
       or
       line:find("^#VE?R?B?O?S?I?T?Y?") and verbosity(tonumber(line:match("^#VE?R?B?O?S?I?T?Y?%s+([%S]+)")))
+      or
+      line:find("^#DEBUG") and verbosity(2)
       or
       line:find("^#T") and ((arg and tabulate_selected(rest)) or tabulate_record())
       or

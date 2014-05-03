@@ -45,8 +45,10 @@ function parse (str)
       function closing()   return check_pattern ("%)") end  
       function operator()  return check_pattern ("[%+%-%*%/%^]") end  
       function exp()       return check_pattern ("exp ?%(") end  
-      function log()       return check_pattern ("ln ?%(") end 
+      function log()       return check_pattern ("log ?%(") end 
+      function log()        return check_pattern ("ln ?%(") end 
       function min()       return check_pattern ("min ?%(") end 
+      function argmin()    return check_pattern ("argmin ?%(") end 
       function variable()  return check_pattern (NAMEPATTERN) end  
       function number()    return extract_number( check_pattern (NUMBERPATTERN)) end 
       function operand()   return func() or variable() or number() or subexpression() or nil end
@@ -75,13 +77,17 @@ function parse (str)
          if exp() then
             s, newpos = expression (str, pos, len, level+1)
             pos = newpos
-            return {1 ,"e", s}
+            return {1 ,"exp", s}
          elseif log() then
             s, newpos = expression (str, pos, len, level+1)
             pos = newpos
-            return {1, "l", s}
+            return {1, "log", s}
+         elseif argmin() then
+            s, newpos = expression (str, pos, len, level+1)
+            pos = newpos
+            return {1, "argmin", s}
          elseif min() then
-            return dualfunc("m")
+            return dualfunc("min")
          end
       end
    
@@ -123,7 +129,7 @@ end
 
 
 function find_first_highest_rank (expr)
-   rank={["+"]=1, ["-"]=1, ["*"]=2 ,["/"]=2 ,["^"]=3, ["e"]=4, ["l"]=4}
+   rank={["+"]=1, ["-"]=1, ["*"]=2 ,["/"]=2 ,["^"]=3, ["e"]=4, ["l"]=4, ["argmin"]=4}
    local pos=2
    for i,v in ipairs (expr) do
       -- print (i,v,rank[v],rank[expr[pos]])

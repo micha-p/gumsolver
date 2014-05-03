@@ -59,7 +59,7 @@ function process_table(connectortable, DELIMITER, filehandle)
 
    for k,v in pairs(colnames) do io.write(PRINT16(v).."\t") end
    print()
-   for k,v in pairs(colnames) do io.write(connectortable[v]["unit"].."\t") end
+   for k,v in pairs(colnames) do io.write(connectortable[v]["unit"] or "".."\t") end
    print()
    for line, record in ipairs(records) do 
       clear_tableline(connectortable, colnames)

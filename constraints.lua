@@ -10,20 +10,26 @@ require 'display'
 require 'tables'
 
 
+NEW = function(a)   return a    end
+POS = function(a)   return a>0  end 
+ZRO = function(a)   return a==0 end 
+NEG = function(a)   return a<0  end 
 
 ADD = function(a,b) return a+b  end 
 SUB = function(a,b) return a-b  end 
 MUL = function(a,b) return a*b  end 
 DIV = function(a,b) return a/b  end
+AMP = function(a,b) return a*b  end
 MIN = function(a,b) return math.min(a,b) end
 LIM = function(r,x) if (r>x) then print (PRINT16 ("EXCEEDING LIMIT!") , PRINT (r) , PRINT (x)) else return r end end
 SQU = function(a)   return a^2  end
 SQR = function(a)   return a^.5 end
 RET = function(a)   return a    end
+ABS = function(a)   return math.abs(a) end
 EXP = function(a)   return math.exp(a) end
 LOG = function(a)   return math.log(a) end
 
-PRINT16 = function (a) return a end
+PRINT16 = function (a) return string.format("%-15.15s",a) end
 PRINT   = function (a) return a end
 EQUAL   = function (a,b) return a == b end
 
@@ -35,9 +41,41 @@ function make_actor (process_new_value, process_forget_value)
   return me
 end
 
+
+-- a op1 b -> r
+-- r op2 a -> b
+-- r op2 b -> a 
+function constraint (a, b, r, op1, op2)  
+   local me = {}
+   local actors = {a,b,r}
+   local function process_new_value ()
+      if TRACE then print ("processing new", a and PRINT(a.get()), b and PRINT(b.get()), r and PRINT(r.get())) end 
+      if     a.value() and b.value() and not r.value() then r.set(me, op1 (a.get(), b.get())) 
+      elseif r.value() and b.value() and not a.value() then a.set(me, op2 (r.get(), b.get())) 
+      elseif r.value() and a.value() and not b.value() then b.set(me, op2 (r.get(), a.get())) 
+      end
+   end
+   local function process_forget_value ()
+      if TRACE then print ("processing forget", a, b, r) end 
+      r.forget(me)
+      a.forget(me)
+      b.forget(me)
+      process_new_value()
+   end
+   me = make_actor (process_new_value, process_forget_value) 
+   me["setters"]  = function () return actors end
+   me["class"]  = "constraint"
+   a.connect(me)
+   b.connect(me)
+   r.connect(me)
+   return me
+end
+
+-- r <- op1 a
+-- a <- op2 r
 function pipe (a, r, op1, op2)  
   local me = {}
-  local actors = {a,b}
+  local actors = {a,r}
   local function process_new_value ()
     if     a.value() then r.set (me, op1 (a.get())) 
     elseif r.value() then a.set (me, op2 (r.get())) 
@@ -56,35 +94,6 @@ function pipe (a, r, op1, op2)
   return me
 end
 
--- a op1 b -> r
--- r op2 a -> b
--- r op2 b -> a 
-function constraint (a, b, r, op1, op2)  
-   local me = {}
-   local actors = {a,b,r}
-   local function process_new_value ()
-      if TRACE then printtrace (me, "processing new", a, b, r) end 
-      if     a.value() and b.value() and not r.value() then r.set(me, op1 (a.get(), b.get())) 
-      elseif r.value() and b.value() and not a.value() then a.set(me, op2 (r.get(), b.get())) 
-      elseif r.value() and a.value() and not b.value() then b.set(me, op2 (r.get(), a.get())) 
-      end
-   end
-   local function process_forget_value ()
-      if TRACE then printtrace (me, "processing forget", a, b, r) end 
-      r.forget(me)
-      a.forget(me)
-      b.forget(me)
-      process_new_value()
-   end
-   me = make_actor (process_new_value, process_forget_value) 
-   me["setters"]  = function () return actors end
-   me["class"]  = "constraint"
-   a.connect(me)
-   b.connect(me)
-   r.connect(me)
-   return me
-end
-
 function constant (connector, value)
    local me = {}
    local actors = {connector}
@@ -98,8 +107,10 @@ end
 
 
 function printprobe (name, value)
-   print (PRINT16 (name), PRINT16 (value))
-   io.flush()
+   if not MUTE then 
+      print (PRINT16 (name), PRINT16 (value))
+      io.flush()
+   end
 end
 
 
@@ -119,51 +130,64 @@ end
 
 function make_connector()
   local me = {}
-  local value = nil
+  local val = nil
   local informant = nil
   local actors = {}
 
   local set_my_value = function (setter, newval)
-    if TRACE then printtrace (me, "RECEIVED " .. newval.abs() .. " from ".. (tabletest(setter) and short(setter) or setter)) end
+    if TRACE then warn ("RECEIVED " .. PRINT(newval) .. " from ".. (tabletest(setter) and setter["class"] or setter)) end
     if (not informant) then 
-      value = newval
+      val = newval
       informant = setter
-      for k,v in pairs (actors) do if v ~= setter then 
-         if TRACE and DEBUG then printtrace (me, "informs about new value ", v) end
-         v.new () end end
+      for k,v in ipairs (actors) do 
+         if v ~= setter then 
+            if TRACE and DEBUG then print ("informs about new value ", v) end
+            v.new () 
+         end 
+      end
     else
-      if not EQUAL (value, newval) then print (PRINT16 ("CONTRADICTION!") , PRINT (value) , PRINT (newval), hint) end
+      if not EQUAL (val, newval) then print (PRINT16 ("CONTRADICTION!") , PRINT(val) , PRINT (newval), hint) end
     end
   end
 
   local forget_my_value = function (retractor)
-    if TRACE then printtrace (me, "RECEIVED FORGET from ".. (tabletest(retractor) and short(retractor) or retractor)) end
+    if TRACE then warn ("RECEIVED FORGET from ".. (tabletest(retractor) and retractor["class"] or retractor)) end
     if retractor == informant then
        informant = nil
-       for k,v in pairs (actors) do if v ~= retractor then 
-         if TRACE and DEBUG then printtrace (me, "informs about loss ", v) end
-       v.lost() end end
+       for k,v in ipairs (actors) do 
+          if v ~= retractor then 
+             if TRACE and DEBUG then print ("informs about loss ", v) end
+             v.lost()
+          end 
+       end
     end
   end
   
-  local connect_actor = function (new_constraint)
-    if not table.find (actors, new_constraint) then table.insert (actors, 1, new_constraint) end
-    if informant then new_constraint.new() end
+  local connect_actor = function (constraint)
+    if not table.find (actors, constraint) then table.insert (actors, constraint) end
+    if informant then constraint.new() end
+  end
+
+  local disconnect_actor = function (constraint)
+     table.remove (actors, assert(table.find (actors, constraint), "Can't disconnect"))
   end
 
   me["class"]  = "connector"
   me.listeners  = function () return actors end
   me.value 	= function () return informant end
-  me.get    	= function () return value end
-  me.set    	= function (actor, new) set_my_value    (actor, new) end
-  me.forget 	= function (actor)      forget_my_value (actor)      end
-  me.connect	= function (actor)      connect_actor   (actor)      end
+  me.get    	= function () return val end
+  me.set    	= function (actor, new) set_my_value     (actor, new) end
+  me.forget 	= function (actor)      forget_my_value  (actor)      end
+  me.connect	= function (actor)      connect_actor    (actor)      end
+  me.disconnect	= function (actor)      disconnect_actor (actor)      end
 
   return me
 end
 
 
 ---------------------------------------------------------------
+
+ensure_positive = function (x) if POS(x) then return x else error(PRINT(x).."< Zero") end end
 
 function cadd(x,y) local z=make_connector(); constraint(x, y, z, ADD, SUB); return z end
 function csub(x,y) local z=make_connector(); constraint(z, y, x, ADD, SUB); return z end
@@ -175,6 +199,7 @@ function csqr(x  ) local z=make_connector(); pipe      (x,    z, SQR, SQU); retu
 function cexp(x  ) local z=make_connector(); pipe      (x,    z, EXP, LOG); return z end 
 function clog(x  ) local z=make_connector(); pipe      (x,    z, LOG, EXP); return z end 
 function cret(x  ) local z=make_connector(); pipe      (x,    z, RET, RET); return z end 
+function cabs(x  ) local z=make_connector(); pipe      (x,    z, ABS, ensure_positive); return z end 
 function cval(v  ) local z=make_connector(); constant  (z,v);               return z end 
 
 function SUM   (x,y,s) return constraint(x, y, s, ADD, SUB); end
@@ -244,7 +269,7 @@ A.forget ("user")
 B.set ("user", 3)
 M.set ("user", 2) --> A = 2
 M.forget ("user")
-M.set ("user", 4) --> Error
+M.set ("user", 4) --> Error EXCEEDING LIMIT!
 M.forget ("user")
 B.forget ("user")
 A.set ("user", 5)

@@ -7,16 +7,18 @@ CONNECTORS={}    		-- name: connector (explicitly defined)
 CONSTRAINTS={}   		-- hint or number : constraint 
 PROBES={}
 
-eadd=function(x,y,z) c=SUM   (x,y,z);c["info"]="+";table.insert(CONSTRAINTS,c);return z end
-esub=function(x,y,z) c=DIFF  (x,y,z);c["info"]="-";table.insert(CONSTRAINTS,c);return z end
-emul=function(x,y,z) c=PROD  (x,y,z);c["info"]="*";table.insert(CONSTRAINTS,c);return z end
-ediv=function(x,y,z) c=RATIO (x,y,z);c["info"]="/";table.insert(CONSTRAINTS,c);return z end
-emin=function(x,y,z) c=FNMIN (x,y,z);c["info"]="_";table.insert(CONSTRAINTS,c);return z end
-esqu=function(x,  z) c=SQUARE(x,z);  c["info"]="²";table.insert(CONSTRAINTS,c);return z end
-esqr=function(x,  z) c=SQROOT(x,z);  c["info"]="®";table.insert(CONSTRAINTS,c);return z end
-eexp=function(x,  z) c=FNEXP(x,z);   c["info"]="€";table.insert(CONSTRAINTS,c);return z end
-elog=function(x,  z) c=FNLOG(x,z);   c["info"]="ł";table.insert(CONSTRAINTS,c);return z end
-eval=function(  v,z) c=CONST (z,v  );c["info"]="=";table.insert(CONSTRAINTS,c);return z end
+
+eadd=function(x,y,root) c=SUM   (x,y,root);c["info"]="+";table.insert(CONSTRAINTS,c);return root end
+esub=function(x,y,root) c=DIFF  (x,y,root);c["info"]="-";table.insert(CONSTRAINTS,c);return root end
+emul=function(x,y,root) c=PROD  (x,y,root);c["info"]="*";table.insert(CONSTRAINTS,c);return root end
+ediv=function(x,y,root) c=RATIO (x,y,root);c["info"]="/";table.insert(CONSTRAINTS,c);return root end
+emin=function(x,y,root) c=FNMIN (x,y,root);c["info"]="_";table.insert(CONSTRAINTS,c);return root end
+esqu=function(x,  root) c=SQUARE(x,root);  c["info"]="²";table.insert(CONSTRAINTS,c);return root end
+esqr=function(x,  root) c=SQROOT(x,root);  c["info"]="®";table.insert(CONSTRAINTS,c);return root end
+eexp=function(x,  root) c=FNEXP(x,root);   c["info"]="exp";table.insert(CONSTRAINTS,c);return root end
+elog=function(x,  root) c=FNLOG(x,root);   c["info"]="log";table.insert(CONSTRAINTS,c);return root end
+eval=function(  v,root) c=CONST (root,v  );c["info"]="=";table.insert(CONSTRAINTS,c);return root end
+eargmin=function(target,root) c=FNARGMIN(root,target); c["info"]="argmin";table.insert(CONSTRAINTS,c);return root end
 
 function run (connectortable, connector, val , abs , rel) 
    if connector then
@@ -37,10 +39,13 @@ function run (connectortable, connector, val , abs , rel)
 end
 
 function ensure_symbol (name, connector)
+   if DEBUG then warn("Ensure",name,CONNECTORS[name]) end
    if not CONNECTORS[name] then 
       CONNECTORS[name]= connector or make_connector()
    end
-return CONNECTORS[name]
+   local c = CONNECTORS[name]
+   c["name"] = name
+return c
 end
 
 function ensure_symbol_and_probe(name, connector)
@@ -62,11 +67,13 @@ function EVAL(expr, rootconnector)
           or
           infix=="/" and ediv (op1, op2, root)
           or
-          infix=="m" and emin (op1, op2, root)
+          infix=="min" and emin (op1, op2, root)
           or
-          infix=="e" and eexp (op2, root)
+          infix=="exp" and eexp (op2, root)
           or
-          infix=="l" and elog (op2, root)
+          infix=="log" and elog (op2, root)
+          or
+          infix=="argmin" and eargmin (op2, root)
           or
           infix=="^" and op2==2 and esqu (op1, root)
           or
