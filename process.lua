@@ -10,52 +10,91 @@ end
 
     
 function process_line (input)   
-   local name=extract_name(input)
-   local unit=extract_unit(input)
-   local expr=extract_expr(input)
-   local val
-
    if not input or input=="" then return end
-   if not name  then error ("Name not recognized:"..input.."$") return end
    if MASK then reservemaskline(name) end
-   if expr then
-      if string.match (expr, NAMEPATTERN.."@[%d]+") then          	-- name@...
-         local entry  = string.match (expr, NAMEPATTERN) 
-         local recnum = tonumber(string.match (expr, "@([%d]+)")) 
-         local rec = assert (RECORDS[recnum], "Invalid record number: "..recnum)
-         run(ensure_symbol_and_probe (name), rec[entry])
-      elseif string.match (expr, "^%s*$") then    			-- name =
-         if DEBUG then print(warn(PRINT16(name), "= (user)")) end
-         run(ensure_symbol_and_probe (name))
-      elseif string.match (expr, "^%s*%.%s*$") then    			-- name = .
-         if DEBUG then print(warn(PRINT16(name), "= .(user)")) end
-         run(ensure_symbol_and_probe (name))
-      elseif string.match (expr, "^[%s%d%.%_%±%+%-%%]*$") then    	-- name = value
-         local val
-         val = vreader(expr)
-         if DEBUG then print(warn(PRINT16(name), "=", expr.." (user)")) end
-         run(ensure_symbol_and_probe (name), val)
-      elseif string.match (expr, "^%s*"..NAMEPATTERN.."%s*$") then      -- name = name
-         local a = ensure_symbol_and_probe (name)
-         local b = ensure_symbol_and_probe (expr)
-         pipe (a, b, RET, RET)
-         if DEBUG then print(warn(PRINT16(name), "==", expr)) end
-      elseif  string.find (expr, "[%a*/%+%-%(%)]") then               	-- name = expression
-         if DEBUG then print(warn(PRINT16(name), pretty(order(parse(expr))))) end
-         DEFINITIONS[name]=expr
-         EVAL(order(parse(expr)), ensure_symbol_and_probe (name))
+   if string.find (input, "=") then
+      local left=extract_left(input)
+      local right=extract_right(input)
+      local name=extract_name(left)
+      local expr=extract_expr(right)
+      assert(left and right,"Can't understand equation:"..input.."$")
+      if left == name then 
+         if string.match (expr, "^%s*$") then	    				-- name =
+            if DEBUG then print(warn(PRINT16(name), "=\t .")) end
+            run(ensure_symbol_and_probe (name))
+         elseif string.match (expr, "^%s*%.%s*$") then    			-- name = .
+            if DEBUG then print(warn(PRINT16(name), "=\t .")) end
+            run(ensure_symbol_and_probe (name))
+         elseif string.match (expr, "^%s*"..NUMBERPATTERN.."%s*$") then    	-- name = number
+            local val = vreader(expr)
+            if DEBUG then print(warn(PRINT16(name), "=\t", expr)) end
+            run(ensure_symbol_and_probe (name), val)
+         elseif string.match (expr, "^%s*"..VALUEPATTERN.."%s*$") then    	-- name = value +- uncertainty
+            local val = vreader(expr)
+            if DEBUG then print(warn(PRINT16(name), "=\t", expr)) end
+            run(ensure_symbol_and_probe (name), val)
+         elseif string.match (expr, "^%s*"..NAMEPATTERN.."%s*$") then      	-- name = name
+            local a = ensure_symbol_and_probe (name)
+            local b = ensure_symbol_and_probe (expr)
+            pipe (a, b, RET, RET)
+            if DEBUG then print(warn(PRINT16(name), "=\t", expr)) end
+         elseif  string.find (expr, EXPRPATTERN) then				-- name = expression
+            if DEBUG then print(warn(PRINT16(name), "=\t", pretty(unpack(order(parse(expr)))))) end
+            DEFINITIONS[name]=expr
+            EVAL(order(parse(expr)), ensure_symbol_and_probe (name))
+         else
+            error ("Can't resolve right side: "..expr)
+         end
       else
-         error ("Can't resolve right side: "..expr)
+         if string.match (left, "^%s*"..NUMBERPATTERN.."%s*$") then    		-- number = expr
+            local rexpr = pretty(order(parse(right)))
+            local num = tonumber(extract_number(left))
+            if DEBUG then print(warn(PRINT16(num), "=\t", rexpr)) end
+            local b = ensure_symbol_and_probe (rexpr)
+            pipe (EVAL(num), b, RET, RET)
+            EVAL(order(parse(right)), b)
+         elseif string.match (right, "^%s*"..NUMBERPATTERN.."%s*$") then    	-- expr = number
+            local lexpr = pretty(order(parse(left)))
+            local num = tonumber(extract_number(right))
+            if DEBUG then print(warn(lexpr, "=\t", num)) end
+            local a = ensure_symbol_and_probe (lexpr)
+            pipe (a, EVAL(num), RET, RET)
+            EVAL(order(parse(left)), a)
+         elseif string.match (left, "^%s*"..VALUEPATTERN.."%s*$") then    	-- value +- uncertainty = expr
+            local val = vreader(left)
+            if DEBUG then print(warn(PRINT16(val), "=\t", expr)) end
+            error ("Values with uncertaninty are not allowed on left side. Use variable instead!")
+         elseif  string.find (left, EXPRPATTERN) then               		-- expression = expression
+            local lexpr = pretty(order(parse(left)))
+            local rexpr = pretty(order(parse(right)))
+            local a = ensure_symbol_and_probe (lexpr)
+            local b = ensure_symbol_and_probe (rexpr)
+            pipe (a, b, RET, RET)
+            EVAL(order(parse(left)), a)
+            EVAL(order(parse(right)), b)
+         else
+            error ("Can't resolve left side: "..left)
+         end
       end
    else 
-      if unit then
-         local c = ensure_symbol_and_probe (name, ensure_symbol(name))	-- name [unit]
+      local expr=extract_expr(input)
+      local name=extract_name(input)
+      local unit=extract_unit(input)
+      if DEBUG then print(warn("left",left,"name",name,"expr",expr)) end
+      assert(name,"Can't find name"..input.."$")
+      if name ~= expr then							-- expression
+         local lexpr = pretty(order(parse(expr)))
+         if DEBUG then print(warn(lexpr)) end
+         local a = ensure_symbol_and_probe (lexpr)       	
+         EVAL(order(parse(expr)), a)
+      elseif unit then
+         local c = ensure_symbol_and_probe (name, ensure_symbol(name))		-- name [unit]
          c["scale"] = SCALE[unit]
          c["unit"] = unit
          if DEBUG then print(warn (name,unit)) end
          run(CONNECTORS[name])
       else
-         ensure_symbol_and_probe (name)       			 	-- name
+         ensure_symbol_and_probe (name)       			 		-- name
          run(CONNECTORS[name])
       end
    end

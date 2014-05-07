@@ -35,6 +35,7 @@ end
 
 -- print(1,2,3)
 -- print(warn(1,2,3))
+-- print(warn(1,nil,3))
 
 best = function (n, precision) 
    if n==0 then

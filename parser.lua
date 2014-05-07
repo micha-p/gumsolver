@@ -1,10 +1,16 @@
-NAMEPATTERN   = "%a[%w%.%_]*[%w]*[%']*"
-NUMBERPATTERN = "-?[%d._]+"
-ARGPATTERN    = "[^)]+"
-UNITPATTERN   = "%[.+%]"
+NAMEPATTERN   	= "%a[%w%.%_]*[%w]*[%']*"
+NUMBERPATTERN 	= "-?[%d._]+"
+VALUEPATTERN 	= NUMBERPATTERN.."%s?%+?[%±%%-]?%s?"..NUMBERPATTERN
+ARGPATTERN    	= "[^)]+"
+UNITPATTERN   	= "%[.+%]"
+EXPRPATTERN	= "[%a%*%/%+%-%(%)%^]"
 
 function extract_left (s)
-return s:match("%s*(.*)%s*=?")
+return s:match("^%s*(.*[^%s])%s*=")
+end 
+
+function extract_right (s)
+return s:match("=%s*(.*[^%s])%s*$")
 end 
 
 function extract_name (s)
@@ -16,7 +22,7 @@ return s:match("%s*"..NAMEPATTERN.."%s*("..UNITPATTERN..")%s*=?")
 end 
 
 function extract_expr (s)
-return s:match(".*=%s*(.*)%s*$")
+return s:match("%s*(.*)%s*$")
 end 
 
 function extract_number (s)
