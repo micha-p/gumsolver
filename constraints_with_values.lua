@@ -22,12 +22,26 @@ LIM = vlim
 
 -- GLOBALS
 EQUAL   = function (a,b) return a.v == b.v and a.D2 == b.D2 end 
-PRINTV  = function (r) return r and numbertest(r) and tostring(r) or r and best(r.v,4) or "." end
-PRINTE  = function (r) return (not r and ".") 
-                              or r and numbertest(r) and tostring(r) 
-                              or (RELATIVE and r.d2 ~= 0 and best(100 * math.sqrt(r.d2),2) .. "%") or best(math.sqrt(r.D2),3) end
-PRINT   = function (r) return r and (PRINTV(r) ..  " ± " .. PRINTE(r)) or "." end 
-PRINT16 = function (r) return stringtest(r) and string.format("%-15.15s",r) or PRINT16(PRINT(r)) end
+PRINTV  = function (r) return (not r and ".")
+                              or
+                              (not r.v and ".")
+                              or
+                              BEST and best(r.v,5) 
+                              or 
+                              string.format("%-15G",r.v) 
+          end
+PRINTE  = function (r) return (RELATIVE and r.d2 and best(100 * math.sqrt(r.d2),2) .. "%") 
+                              or 
+                              r.D2 and best(math.sqrt(r.D2),3) 
+          end
+PRINTX  = function (r) return (not r and ".")
+                              or
+                              numbertest(r) and string.format("%-15G",r) 
+                              or
+                              ERRORS and r.d2 and (PRINTV(r) ..  " ± " .. PRINTE(r))
+                              or
+                              PRINTV(r)
+                              end 
 
 --[[
 C = make_connector()

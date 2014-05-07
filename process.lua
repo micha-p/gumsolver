@@ -17,46 +17,46 @@ function process_line (input)
 
    if not input or input=="" then return end
    if not name  then error ("Name not recognized:"..input.."$") return end
-   if MASK then reservemaskline(name, nil, unit) end
-
+   if MASK then reservemaskline(name) end
    if expr then
       if string.match (expr, NAMEPATTERN.."@[%d]+") then          	-- name@...
          local entry  = string.match (expr, NAMEPATTERN) 
          local recnum = tonumber(string.match (expr, "@([%d]+)")) 
          local rec = assert (RECORDS[recnum], "Invalid record number: "..recnum)
-         run(CONNECTORS, ensure_symbol_and_probe(name), rec[entry])
-      elseif string.match (input, NAMEPATTERN.."%s*=%s*$") then		-- name =
-         local c = CONNECTORS[name]
-         if c then 
-            local val = getval_from_connector_with_unit(c)
-            if not MASK then print (val) end
-            return val
-         end
+         run(ensure_symbol_and_probe (name), rec[entry])
+      elseif string.match (expr, "^%s*$") then    			-- name =
+         if DEBUG then print(warn(PRINT16(name), "= (user)")) end
+         run(ensure_symbol_and_probe (name))
+      elseif string.match (expr, "^%s*%.%s*$") then    			-- name = .
+         if DEBUG then print(warn(PRINT16(name), "= .(user)")) end
+         run(ensure_symbol_and_probe (name))
       elseif string.match (expr, "^[%s%d%.%_%±%+%-%%]*$") then    	-- name = value
          local val
          val = vreader(expr)
-         if DEBUG then warn(PRINT16(name), "=", expr.." (user)") end
-         run (c, ensure_symbol_and_probe(name), val)
+         if DEBUG then print(warn(PRINT16(name), "=", expr.." (user)")) end
+         run(ensure_symbol_and_probe (name), val)
       elseif string.match (expr, "^%s*"..NAMEPATTERN.."%s*$") then      -- name = name
-         local a = ensure_symbol_and_probe(name)
-         local b = ensure_symbol_and_probe(expr)
+         local a = ensure_symbol_and_probe (name)
+         local b = ensure_symbol_and_probe (expr)
          pipe (a, b, RET, RET)
-         if DEBUG then warn(PRINT16(name), "==", expr) end
+         if DEBUG then print(warn(PRINT16(name), "==", expr)) end
       elseif  string.find (expr, "[%a*/%+%-%(%)]") then               	-- name = expression
-         if DEBUG then warn(PRINT16(name), expr) end
+         if DEBUG then print(warn(PRINT16(name), pretty(order(parse(expr))))) end
          DEFINITIONS[name]=expr
-         if DEBUG then display (order(parse(expr))) end
-         EVAL(order(parse(expr)), ensure_symbol_and_probe(name))
+         EVAL(order(parse(expr)), ensure_symbol_and_probe (name))
       else
          error ("Can't resolve right side: "..expr)
       end
    else 
       if unit then
-         ensure_symbol_and_probe_with_unit (name, unit)            	-- name [unit]
-         run(CONNECTORS, CONNECTORS[name])
+         local c = ensure_symbol_and_probe (name, ensure_symbol(name))	-- name [unit]
+         c["scale"] = SCALE[unit]
+         c["unit"] = unit
+         if DEBUG then print(warn (name,unit)) end
+         run(CONNECTORS[name])
       else
-         ensure_symbol_and_probe(name)                             	-- name
-         run(CONNECTORS, CONNECTORS[name])
+         ensure_symbol_and_probe (name)       			 	-- name
+         run(CONNECTORS[name])
       end
    end
 end
@@ -77,12 +77,13 @@ function process_directive(line)
    end
    local arg  = line:match("^#[A-Z]+%s+([%S]+)")
    local rest = line:match("^#[A-Z]+%s+(.*)$")
+   local out  = line:match("^#PR?I?N?T? (.*)$")
    return 
-      line:find("^#P") and (TABLE or RECORD) and  warn (line:match("^#PR?I?N?T? (.*)$") or "")
+      line:find("^#P") and (TABLE or RECORD) and  warn (out or "")
       or
-      line:find("^#P") and MASK and printfullmaskline (line:match("^#PR?I?N?T? (.*)$"))
+      line:find("^#P") and MASK and printfullmaskline (out or "")
       or
-      line:find("^#P") and (print (line:match("^#PR?I?N?T? (.*)$") or "") or not nil)
+      line:find("^#P") and (print (out or "") or not nil)
       or
       line:find("^#U") and (readunit (rest) or not nil)
       or

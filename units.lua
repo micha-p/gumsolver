@@ -31,6 +31,14 @@ Any units have to be declared before first use with directive #UNIT. Using this 
 
 --]]
 
+PRINT16 = function (...) 
+   local f={}
+   for i,r in ipairs(arg) do
+      f[i] = stringtest(r) and string.format("%-15.15s",r) or string.format("%-15.15s",PRINTX(r))
+   end
+return unpack (f)
+end
+
 SCALE={}
 
 function readunit(line)
@@ -40,35 +48,14 @@ function readunit(line)
    if DEBUG then warn ("UNIT", unit, scale) end
 end
 
-
-function probe_unit (name, connector, unit, scale)
-   local me = {}
-   local actors = {connector}
-   me = scale and make_actor (function () printprobe (name, PRINT (vamp(connector.get(), 1/scale)), unit) end, 
-                              function () printprobe (name, ".", unit) end, name)
-        or make_actor (function () printprobe (printname, PRINT (connector.get())) end, 
-                       function () printprobe (printname, ".") end,
-                       name)
-   me["class"]   = "probe"
-   me["name"]    = name
-   me["unit"]    = unit
-   me["setters"] = function () return actors end
-   connector.connect(me)
-   return me
+function printprobe (name, connector)
+   print (PRINT16 (name, connector and connector["unit"] or "", connector and PRINTX (get_scaled_val_from_connector (connector)) or "."))
+   io.flush()
 end
+
 
 function get_scaled_val_from_connector (connector)
    local scale = connector["scale"] or 1
-return vamp(connector.get(), 1/scale)
-end
-   
-function ensure_symbol_and_probe_with_unit (name, unit, connector)
-   c= ensure_symbol (name, connector)
-   c["scale"] = SCALE[unit]
-   c["unit"] = unit
-   if not PROBES[name] then 
-         PROBES[name] = probe_unit (name, CONNECTORS[name], unit, SCALE[unit]) 
-   end
-return CONNECTORS[name]
+return connector.value() and vamp(connector.get(), 1/scale) or nil
 end
 

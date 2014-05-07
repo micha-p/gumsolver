@@ -4,17 +4,18 @@ package.path = package.path .. ";include/?.lua"
 require 'display'
 require 'table'
 
-require 'expressions'
+require 'constraints_with_values'   	-- PRINTX redefined
+require 'expressions'			-- global CONNECTORS
+require 'units'   			-- overwrite: PRINT16, printprobe
 require 'process'
 require 'csv'
 require 'table-mode'
-require 'constraints_with_values'
 require 'dump'
 require 'records'
-require 'mask'
+require 'mask'				-- overwrite printprobe
 require 'trace'
-require 'units'
 require 'optimization'
+
 
 
 VERSION = "0.4.0"
@@ -25,7 +26,8 @@ MUTE=nil
 RELATIVE=nil
 DELIMITER="\t"
 RECORD=nil
-ERRORS=nil
+BEST=not nil
+ERRORS=not nil
 MASK=nil
 INFILE=nil
 RECORDS={}			-- number : record
@@ -35,15 +37,6 @@ COLNAMES={}			-- number : string
 TRACE=nil
 DEBUG=nil
 ITER=nil
-
--- overwrite !!!!
-function printprobe (name, value, unit)
-   if MASK then printmaskline (name, value, unit) end
-   if DEBUG then warn (PRINT16 (name), PRINT16 (unit or ""), value) end
-   if TRACE then warn (short(CONNECTORS[name]), PRINT16 (name), PRINT16 (unit or ""), value) end
-   if not MUTE and not MASK then print (PRINT16 (name), PRINT16 (unit or ""), value) end
-end
-    
 
 -- TODO consistant upper and lower case letters for modes
 
@@ -55,18 +48,21 @@ help[ 4]="          -v		   show version and terminate"
 help[ 5]="          -d delimiter   field separator for input"
 help[ 6]="          -a             display absolute uncertainties (default)"
 help[ 7]="          -r             display relative uncertainties"
-help[ 8]="          --DEBUG        debug messages to stderr (toggle)"
-help[ 9]="          --TRACE        trace signals to stderr (toggle)"
-help[10]="          --ITER         print iterations to stderr (toggle)"
+help[ 8]="          -DEBUG         debug messages to stderr (toggle)"
+help[ 9]="          -TRACE         trace signals to stderr (toggle)"
+help[10]="          -ITER          print iterations to stderr (toggle)"
 help[11]="          -R             Restrict output to records"
 help[12]="          -I             interactive (readline wrapper suggested)"
 help[13]="          -J             interactive (nonscrolling mask)"
 help[14]="          -Q             stop working and exit"
-help[15]="          --VERSION      display version"
+help[15]="          -VERSION       display version"
 help[16]="          -q             restrict standard output to special commands"
 help[17]="          -f file        use file for input"
 help[18]="          -t		   table mode (toggle)"
-help[19]="          -E		   errors in same column"  -- TODO invert behaviour (also in DEMOfiles)
+help[19]="          -BEST	   numbers rounded for best visibility (default)"
+help[20]="          -FULL	   numbers not rounded"
+help[21]="          -ERRORS	   print errors if present (default)"
+help[22]="          -SUPPRESS	   suppress errors"  -- TODO adjust behaviour of DEMOfiles
 
 
 function process_include(f)
@@ -78,7 +74,7 @@ function process_file(f, toplevel)
    local temp = io.input()
    local filehandle = assert(io.open(f))
    if TABLE then
-      process_table(CONNECTORS, DELIMITER, filehandle)
+      process_table(DELIMITER, filehandle)
    else
       for line in io.input(filehandle):lines() do 
          if line:find("^#Q") then 
@@ -115,15 +111,19 @@ end
 
 while arg and arg[1] do
 
-   TRACE    = TRACE    or arg[1]=="--TRACE" and not TRACE
-   ITER     = ITER     or arg[1]=="--ITER"  and not ITER
-   DEBUG    = DEBUG    or arg[1]=="--DEBUG" and not DEBUG
-   TABLE    = TABLE    or arg[1]=="-t"      and not TABLE
-   RECORD   = RECORD   or arg[1]=="-R"      and not RECORD
-   MUTE     = MUTE     or arg[1]=="-q"      and not MUTE
-   ERRORS   = ERRORS   or arg[1]=="-E"      and not ERRORS
+   TRACE    = TRACE    or arg[1]=="-TRACE"   and not TRACE
+   ITER     = ITER     or arg[1]=="-ITER"    and not ITER
+   DEBUG    = DEBUG    or arg[1]=="-DEBUG"   and not DEBUG
+   TABLE    = TABLE    or arg[1]=="-t"       and not TABLE
+   MASK     = MASK     or arg[1]=="-MASK"    and not MASK
+   RECORD   = RECORD   or arg[1]=="-R"       and not RECORD
+   MUTE     = MUTE     or arg[1]=="-q"       and not MUTE
+   BEST     = BEST     or arg[1]=="-BEST"
+   BEST     = BEST     and not (arg[1]=="-FULL")
+   ERRORS   = ERRORS   or arg[1]=="-ERRORS"
+   ERRORS   = ERRORS   and not (arg[1]=="-SUPPRESS") 
    RELATIVE = RELATIVE or arg[1]=="-r" or arg[1]=="-a" and nil
-
+   
    if arg[1]=="-I" then 
       table.remove(arg,1)
       if INFILE then print() end
@@ -134,12 +134,14 @@ while arg and arg[1] do
    if arg[1]=="-J" then 
       table.remove(arg,1)
       MASK = not nil
-      print ("\27[H\27[J")
-      process_eventloop()  -- TODO
+      io.write ("\27[H\27[J")   -- clear screen
+      PROMPT="> "
+      process_eventloop("\13")
    end
    if arg[1]=="-f" then 
       table.remove(arg,1)
       INFILE = not nil
+      if MASK then io.write ("\27[H\27[J") end   -- clear screen
       process_file(arg[1], nil)
    end
    if arg[1]=="-d" then 
@@ -158,11 +160,15 @@ while arg and arg[1] do
    table.remove(arg,1)
 end
 
-if not MASK and not PROMPT and not INFILE then
-   if TABLE then
-      process_table(CONNECTORS, DELIMITER)   --< from stdin
-   else
-      process_stdin()
+if MASK then
+   process_eventloop("\13") 		--< from stdin
+else
+   if not PROMPT and not INFILE then
+      if TABLE then
+         process_table(DELIMITER)   	--< from stdin
+      else
+         process_stdin()
+      end
    end
 end
 

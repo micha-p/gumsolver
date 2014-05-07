@@ -29,7 +29,7 @@ end
 function clear_record()
    local old = MUTE
    MUTE=not nil
-   run(CONNECTORS) --> clear
+   run() --> clear
    MUTE= old
 end
 

@@ -1,4 +1,4 @@
-NAMEPATTERN   = "[%w]*%a[%w%.%_]*[%w]*[%']*"
+NAMEPATTERN   = "%a[%w%.%_]*[%w]*[%']*"
 NUMBERPATTERN = "-?[%d._]+"
 ARGPATTERN    = "[^)]+"
 UNITPATTERN   = "%[.+%]"
@@ -12,7 +12,7 @@ return s:match("%s*("..NAMEPATTERN..")%s*=?")
 end 
 
 function extract_unit (s)
-return s:match("%s*"..NAMEPATTERN.."%s*..("..UNITPATTERN..")%s*=?")
+return s:match("%s*"..NAMEPATTERN.."%s*("..UNITPATTERN..")%s*=?")
 end 
 
 function extract_expr (s)
@@ -129,11 +129,11 @@ end
 
 
 function find_first_highest_rank (expr)
-   rank={["+"]=1, ["-"]=1, ["*"]=2 ,["/"]=2 ,["^"]=3, ["e"]=4, ["l"]=4, ["argmin"]=4}
+   rank={["+"]=1, ["-"]=1, ["*"]=2 ,["/"]=2 ,["^"]=3}
    local pos=2
+   local highest=0
    for i,v in ipairs (expr) do
-      -- print (i,v,rank[v],rank[expr[pos]])
-      if math.mod(i, 2) == 0 and rank[v] > rank[expr[pos]] then pos=i end
+      if math.mod(i, 2) == 0 and rank[v] > highest then highest=rank[v]; pos=i end
    end
 return pos
 end
@@ -144,12 +144,18 @@ function order (expr)
       local r={}
       local h=find_first_highest_rank (expr)
       r[1]=expr[h-1]
-      r[2]=expr[h]
+      r[2]=expr[h]        	--< highest
       r[3]=expr[h+1]
+      expr[h]=order(r)		--< ordered subexpression
       table.remove(expr,h+1)
-      table.remove(expr,h)
-      expr[h-1]=r
+      table.remove(expr,h-1)
       return order(expr)
+   elseif tabletest(expr) and #expr==3 then  
+      local r={} 
+      r[1]=order(expr[1])
+      r[2]=expr[2]        	
+      r[3]=order(expr[3])
+      return r
    else
       return expr
    end
@@ -158,19 +164,22 @@ end
 --[[
 dofile("include/display.lua")
 
-display=write
-display (uncurry (parse ("a+b+c+d")))
-display (uncurry (parse ("a+b+c*d+100")))
-display (find_first_highest_rank (parse ("a+b+c+d+d")))
+--display (uncurry (parse ("a+b+c+d")))
+--display (uncurry (parse ("a+b+c*d+100")))
+--display (find_first_highest_rank (parse ("a+b+c+d+d")))
 display (order (parse ("a+b+c*d")))
 display (order (parse ("a+b+c*d")))
 display (order (parse ("a+b*c/d")))
 display (order (parse ("a+b+c^d")))
 display (order (parse ("a+b²+c^d")))
-display (order (parse "10"))
-display (parse "area")
-display (parse "1_000_000")
-
+display (order (parse ("a+b²*c-d")))
+display (order (parse ("a+b²*(1 + 4*3) -d")))
+display (order (parse ("(a+2*3)+(A^2)")))
+--display (order (parse "10"))
+--display (parse "area")
+--display (parse "1_000_000")
+--]]
+--[[
 display (parse "Ca * 9 / 5 + 32")
 display (order (parse "Cb * 9 / 5  + 32"))
 display (parse "Cc * (9 / 5 ) + 32")

@@ -1,8 +1,20 @@
-CLIPBOARD=""
+CLIPBOARD=nil
+UNDONAME=nil
+UNDOVALUE=nil
 VALUECOLUMN=33
-MASKTABLE={}  -- hash
-MASKARRAY={}  -- array
+MASKTABLE={}  -- lines for connector names
+MASKARRAY={}  -- array of connector names and remarks
 CURRENTLINE=0
+
+
+oldprintprobe = printprobe 
+function printprobe (name, connector)
+   if MASK then 
+      printmaskline (name, connector)
+   else 
+      oldprintprobe(name, connector)
+   end
+end
 
 function jumpdown()
    if CURRENTLINE < #MASKARRAY then
@@ -16,9 +28,9 @@ function jumpup()
    end
 end
 
-function jumplefttostart ()
+function jump_to_left ()
    jumptoline(CURRENTLINE)
-   -- io.write("\27E\27[A")
+   io.write("\27E\27[A")
 end
 
 function jumptoline(line)
@@ -26,8 +38,13 @@ function jumptoline(line)
    io.write("\27[".. CURRENTLINE ..";1H")
 end
 
-function jumptoend(further)
-   CURRENTLINE = #MASKARRAY + (further or 0)
+function jumptoend()
+   CURRENTLINE = #MASKARRAY
+   jumptoline(CURRENTLINE)
+end
+
+function jump_below()
+   CURRENTLINE = #MASKARRAY + 1
    jumptoline(CURRENTLINE)
 end
 
@@ -43,42 +60,31 @@ function jumptomaskline(name)
    end
 end
 
-function reservemaskline(name, value, unit)
+function reservemaskline(name)
    local line = MASKTABLE[name]
    if not line then 
       table.insert(MASKARRAY,name)
-      MASKTABLE[name] = #MASKARRAY
+      MASKTABLE[name] = #MASKARRAY 
+      if DEBUG then warn ("reserved maskline", name, #MASKARRAY) end
    end
-   printmaskline (name, ".", unit)
-end
-
-function printrawmaskline (string)
-   jumptomaskline (string)
-   io.write("\27[K")
-   io.write(string)
-   io.write("\27E\27[A")
+   printmaskline (name)
 end
 
 function printfullmaskline (string)
    table.insert(MASKARRAY,string)
    jumptoend ()
-   io.write("\27[K")
+   io.write("\27[K") -- clear to end of line
    io.write(string)
-   jumplefttostart ()
+   jump_to_left ()
 return not nil
 end
 
-
-function printmaskline (name, value, unit)
+function printmaskline (name, connector)
    if name then
       jumptomaskline (name)
-      io.write("\27[K")
-      io.write(PRINT16(name))
-      io.write("\t")
-      io.write(PRINT16(unit or ""))
-      io.write("\t")
-      io.write(value or "")
-      jumplefttostart ()
+      io.write("\27[K")  -- clear line
+      oldprintprobe(name, connector)
+      jump_to_left ()
    end
 end
 
@@ -91,13 +97,60 @@ end
 
 function process_eventloop()
    local char = ""
-   while char and char ~= "\004" and char ~= "q" do 
-      char = getchar()
-      handlechar(char)
+   while char do 
+      char = handlechar(getchar())
+      jumptoline(CURRENTLINE)
    end
-   jumptoend(1)
-   io.write("\27[K\27[J")
+   jump_below()
 end
+
+function handleinput()
+      jump_below()
+      io.write("\27[K\27[J") -- clear to end of screen
+      io.write(PROMPT or "")
+      local i = io.read()
+      if i then 
+         process_input (i)
+      else
+         return nil
+      end
+end
+
+function handleinteraction(line, char,name,connector,x)
+   if char=="\126" or char=="\127"  or char=="\b" then  			-- delete
+      UNDONAME=name
+      UNDOVALUE=get_scaled_val_from_connector(connector)
+      process_input(name)
+   elseif char=="\t" then							-- input
+      io.write("\27[".. line ..";"..VALUECOLUMN.."H")
+      io.write("\27[K")
+      io.write("")
+      local i = io.read()
+      if i and i~="" then 
+         process_input(name)
+         process_input(name.."=".. i) 
+      end
+   elseif char=="-" then    							-- ~80% ~80% ~80% = 50%
+      process_line(name)
+      process_line(name.."="..PRINTX(vamp(x, math.pow (1/2, 1/3))))
+   elseif char=="+" then    							-- ~125% ~125% ~125% = 200%
+      process_line(name)
+      process_line(name.."="..PRINTX(vamp(x, math.pow (2, 1/3))))
+   elseif char=="\03" then    							-- copy
+      CLIPBOARD = x
+   elseif char=="\24" then    							-- cut
+      CLIPBOARD = x
+      process_input(name)
+   elseif char=="\22" then    							-- paste
+      process_line(name)
+      process_line(name.."=".. PRINTX(CLIPBOARD))
+   elseif char=="\26" then    							-- undo
+      if UNDONAME then process_line(UNDONAME.."=".. PRINTX(UNDOVALUE)) end
+   else
+      io.write ("\a")
+   end
+end
+
 
 function handlechar(char)
    if char=="\27" then
@@ -114,58 +167,24 @@ function handlechar(char)
       else
          warn ("Unknown escape sequence:"..nextchar.."="..string.byte(nextchar))
       end
+   elseif char=="\04" or char=="\17" then
+      return nil
    elseif char=="\13" or char=="\10" then
-      jumptoend(1)
-      io.write("\27[K\27[J")
-      process_input(io.read())
-      jumptoend(1)
-      io.write("\27[K")
-      jumptoend(0)
-   elseif char=="\126" or char=="\127"  or char=="\b" then
-      local c=CURRENTLINE
-      process_input(MASKARRAY[CURRENTLINE])
-      jumptoline(c)
-   elseif char=="\t" then
-      local c=CURRENTLINE
-      io.write("\27[".. c ..";"..VALUECOLUMN.."H")
-      io.write("\27[K")
-      io.write("")
-      process_input(MASKARRAY[CURRENTLINE].."=".. io.read())
-      jumptoline(c)
-   elseif char=="-" then    	--  	~80% ~80% ~80% = 50%
-      local name=MASKARRAY[CURRENTLINE]
-      if name and CONNECTORS[name] then
-         local x = process_line(name.."=")
-         process_line(name)
-         process_line(name.."="..PRINT(vamp(vreader(x), math.pow (1/2, 1/3))))
-      end
-   elseif char=="+" then    	-- 	~125% ~125% ~125% = 200%
-      local name=MASKARRAY[CURRENTLINE]
-      if name and CONNECTORS[name] then
-         local x = process_line(name.."=")
-         process_line(name)
-         process_line(name.."="..PRINT(vamp(vreader(x), math.pow (2, 1/3))))
-      end
-   elseif char=="\03" then    	-- 	copy
-      local name=MASKARRAY[CURRENTLINE]
-      if name and CONNECTORS[name] then
-         CLIPBOARD = process_line(MASKARRAY[CURRENTLINE].."=")
-      end
-   elseif char=="\24" then    	-- 	cut
-      local name=MASKARRAY[CURRENTLINE]
-      if name and CONNECTORS[name] then
-         CLIPBOARD = process_line(MASKARRAY[CURRENTLINE].."=")
-         process_input(MASKARRAY[CURRENTLINE])
-      end
-   elseif char=="\22" then    	-- 	paste
-      local name=MASKARRAY[CURRENTLINE]
-      if CLIPBOARD and name and CONNECTORS[name] then
-         process_line(MASKARRAY[CURRENTLINE])
-         process_line(MASKARRAY[CURRENTLINE].."=".. CLIPBOARD)
-      end
+      handleinput()
    else
-      io.write ("\a")
+      local line = CURRENTLINE
+      local name = MASKARRAY[CURRENTLINE]
+      local connector = name and CONNECTORS[name]
+      if connector and (not connector.value() or connector.value()=="user") then
+         local x = get_scaled_val_from_connector(connector)
+         UNDONAME=name
+         UNDOVALUE=x
+         handleinteraction(line, char, name, connector,x)
+         printmaskline (name, connector)
+         jumptoline(line)
+      end
    end
+   return not nil
 end   
 
 

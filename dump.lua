@@ -31,7 +31,7 @@ function dump_connectors()
    function right(connector)
       if connector["value"] then  
          informant=(connector.value())
-         io.write (informant and PRINT(connector.get()) or "", stringtest(informant) and " ("..informant..")" or "","\n")
+         io.write (informant and PRINTX(connector.get()) or "", stringtest(informant) and " ("..informant..")" or "","\n")
       else
          print()
       end

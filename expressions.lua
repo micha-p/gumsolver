@@ -20,7 +20,7 @@ elog=function(x,  root) c=FNLOG(x,root);   c["info"]="log";table.insert(CONSTRAI
 eval=function(  v,root) c=CONST (root,v  );c["info"]="=";table.insert(CONSTRAINTS,c);return root end
 eargmin=function(target,root) c=FNARGMIN(root,target); c["info"]="argmin";table.insert(CONSTRAINTS,c);return root end
 
-function run (connectortable, connector, val , abs , rel) 
+function run (connector, val , abs , rel) 
    if connector then
       if val then 
          local new = tabletest (val) and val or vnew (val, abs, rel)
@@ -34,7 +34,7 @@ function run (connectortable, connector, val , abs , rel)
          connector.forget ("user")
       end
    else
-      for name,c in pairs(connectortable) do c.forget ("user") end
+      for name,c in pairs(CONNECTORS) do c.forget ("user") end
    end
 end
 
@@ -49,7 +49,8 @@ return c
 end
 
 function ensure_symbol_and_probe(name, connector)
-   ensure_symbol (name, connector)
+   if DEBUG then warn("Ensure",name,CONNECTORS[name],PROBES[name],CONNECTORS[name] and CONNECTORS[name]["unit"]) end
+   if not CONNECTORS[name] then ensure_symbol (name, connector) end
    if not PROBES[name] then 
          PROBES[name] = probe (name, CONNECTORS[name]) 
    end
@@ -99,23 +100,23 @@ function process(name, expr)
    EVAL (order(parse(expr)), root)
 end
 
+c=CONNECTORS
 process ("F","( (9 / 5 ) * C ) + 32" )
 process ("K","C + 273.15")
 process ("R","80 * (C / 100)")
 
-c=CONNECTORS
-run(c,c["C"], 25)
-run(c,c["F"], 212)
-run(c,c["C"])
-run(c,c["F"], 212)
-run(c,c["F"])
-run(c,c["K"],0)
-run(c,c["K"])
-run(c,c["R"], 80)
-run(c,c["R"])
-run(c,c["R"], 0)
-run(c,c["R"])
-run(c,c["C"], 100) 
+run(c["C"], 25)
+run(c["F"], 212)
+run(c["C"])
+run(c["F"], 212)
+run(c["F"])
+run(c["K"],0)
+run(c["K"])
+run(c["R"], 80)
+run(c["R"])
+run(c["R"], 0)
+run(c["R"])
+run(c["C"], 100) 
 
 for k,v in pairs(CONNECTORS) do display("con", k, v["name"]) end
 for k,v in pairs(CONSTRAINTS) do display(k, v["info"]) end

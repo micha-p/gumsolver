@@ -13,7 +13,7 @@ function csv_read(separator,filehandle)
       local fields={}
       if line:find("^#[A-Z]") then
          table.insert(rtable,line)           		-- return line string instead of table of fields
-      elseif not line:find("^# ") then			-- skip comment
+      elseif not line:find("^# ") then			-- skip comments
          for i,field in ipairs(csv_process_line(line, sep)) do
        	    if i > #header then
       	       error ("To many input fields, check line endings!")
@@ -27,12 +27,6 @@ function csv_read(separator,filehandle)
     return rtable,rheader,header
 end
 
-function try_tonumber (s)
-   if string.find(s,"^%s*$")      then return nil end  	-- empty cell
-   if string.find(s,"^%s*%.%s*$") then return nil end  	-- missing value
-   return tonumber(s) or s			    	-- number or symbol
-end
-
 
 function csv_process_line (str, sep)
       str = str .. sep
@@ -42,7 +36,7 @@ function csv_process_line (str, sep)
       repeat
         if str:find('^"', pos) then
           local closing = str:find('[^"]"[^"]', pos+1)
-          if not closing then error('closing " not found') end
+          if not closing then error('closing quote not found') end
           local entry = string.gsub(string.sub (str, pos+1, closing), '""', '"')
           table.insert(t, entry)
           pos = str:find(sep, closing) + 1

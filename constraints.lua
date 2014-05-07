@@ -21,7 +21,7 @@ MUL = function(a,b) return a*b  end
 DIV = function(a,b) return a/b  end
 AMP = function(a,b) return a*b  end
 MIN = function(a,b) return math.min(a,b) end
-LIM = function(r,x) if (r>x) then print (PRINT16 ("EXCEEDING LIMIT!") , PRINT (r) , PRINT (x)) else return r end end
+LIM = function(r,x) if (r>x) then print (PRINT16 ("EXCEEDING LIMIT!") , PRINTX (r) , PRINTX (x)) else return r end end
 SQU = function(a)   return a^2  end
 SQR = function(a)   return a^.5 end
 RET = function(a)   return a    end
@@ -30,7 +30,7 @@ EXP = function(a)   return math.exp(a) end
 LOG = function(a)   return math.log(a) end
 
 PRINT16 = function (a) return string.format("%-15.15s",a) end
-PRINT   = function (a) return a end
+PRINTX  = function (a) return a end
 EQUAL   = function (a,b) return a == b end
 
 function make_actor (process_new_value, process_forget_value)  
@@ -49,7 +49,7 @@ function constraint (a, b, r, op1, op2)
    local me = {}
    local actors = {a,b,r}
    local function process_new_value ()
-      if TRACE then print ("processing new", a and PRINT(a.get()), b and PRINT(b.get()), r and PRINT(r.get())) end 
+      if TRACE then print ("processing new", a and PRINTX(a.get()), b and PRINTX(b.get()), r and PRINTX(r.get())) end 
       if     a.value() and b.value() and not r.value() then r.set(me, op1 (a.get(), b.get())) 
       elseif r.value() and b.value() and not a.value() then a.set(me, op2 (r.get(), b.get())) 
       elseif r.value() and a.value() and not b.value() then b.set(me, op2 (r.get(), a.get())) 
@@ -106,19 +106,17 @@ return me
 end
 
 
-function printprobe (name, value)
-   if not MUTE then 
-      print (PRINT16 (name), PRINT16 (value))
-      io.flush()
-   end
+function printprobe (name, connector)
+   print (PRINT16 (name), PRINT16 (connector and PRINTX (connector.get()) or "."))
+   io.flush()
 end
 
 
 function probe (name, connector)
    local me = {}
    local actors = {connector}
-   me = make_actor (function () printprobe (name, PRINT (connector.get())) end, 
-                    function () printprobe (name, ".") end,
+   me = make_actor (function () if not MUTE then printprobe (name, connector) end end, 
+                    function () if not MUTE then printprobe (name, nil) end end,
                     name)
    me["class"]   = "probe"
    me["name"]    = name
@@ -135,7 +133,7 @@ function make_connector()
   local actors = {}
 
   local set_my_value = function (setter, newval)
-    if TRACE then warn ("RECEIVED " .. PRINT(newval) .. " from ".. (tabletest(setter) and setter["class"] or setter)) end
+    if TRACE then warn ("RECEIVED " .. PRINTX(newval) .. " from ".. (tabletest(setter) and setter["class"] or setter)) end
     if (not informant) then 
       val = newval
       informant = setter
@@ -146,7 +144,7 @@ function make_connector()
          end 
       end
     else
-      if not EQUAL (val, newval) then print (PRINT16 ("CONTRADICTION!") , PRINT(val) , PRINT (newval), hint) end
+      if not EQUAL (val, newval) then print (PRINT16 ("CONTRADICTION!") , PRINTX(val) , PRINTX (newval), hint) end
     end
   end
 

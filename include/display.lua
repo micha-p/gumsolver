@@ -25,18 +25,16 @@ lambdatest   = function (x) return type(x) == "function" end
 threadtest   = function (x) return type(x) == "thread" end
 userdatatest = function (x) return type(x) == "userdata" end 
 
-warn = function (t, ...) -- recursive consumer
-return #arg > 0 and 
-       io.stderr:write("\27[33m") and 
-       io.stderr:write(tostring(t)) and 
-       io.stderr:write("\t") and 
-       warn(unpack(arg))
-       or
-       t and io.stderr:write("\27[33m") and io.stderr:write(tostring(t)) and warn()
-       or
-       io.stderr:flush() and io.stderr:write("\27[m\n")
+
+warn=function (...)
+   local first = arg[1]
+   arg[1]="\27[33m"..tostring(arg[1] or "")
+   arg[#arg+1]="\27[m"
+return unpack(arg)
 end
 
+-- print(1,2,3)
+-- print(warn(1,2,3))
 
 best = function (n, precision) 
    if n==0 then
@@ -54,24 +52,83 @@ best = function (n, precision)
    end
 end
 
+-- formatting to human readable string: best numbers, no quotes, only string keys
+-- numeric keys are ordered before string keys
 
-tabulate = function (t, ...)
-   displayT = function (t)
-      io.write ("{")
+function pretty(t, ...)
+   local prettyT = function (t)
+      local out=""
       for k,v in pairs(t) do 
-         io.write(k,"=")
-         io.stdout:flush()
-         io.write(display1(v))
-         io.stdout:flush()
-         dummy = (k==t.n) or io.write(" ")
+         if out ~="" then out = out.." " end
+         if stringtest(k) then out=out..k.."=" end
+         out=out..pretty(v)
       end
-      io.write ("}")
-      return not nil
+      return out
    end
+   local pretty1 = function (t) return
+      niltest(t)    and "nil"
+      or
+      stringtest(t) and t
+      or
+      numbertest(t) and best(t)
+      or
+      tabletest(t) and "("..prettyT(t)..")"
+      or
+      lambdatest(t) and tostring(t)
+      or
+      t and "not nil" -- PRAGMA
+      or
+      error ("Dont know how to pretty print")
+   end
+   return #arg > 0 and pretty1(t).."\t"..pretty(unpack(arg))
+          or
+          t and pretty1(t)
+          or 
+          "nil"
+end
+
+-- formatting to machine readable string: full numbers, quotes, string keys and curled braces
+-- numeric keys are ordered before string keys
+
+function write(t, ...)
+   local writeT = function (t)
+      local out=""
+      for k,v in pairs(t) do 
+         if out ~="" then out = out..", " end
+         if stringtest(k) then out=out..k.."=" end
+         out=out..write(v)
+      end
+      return out
+   end
+   local write1 = function (t) return
+      niltest(t)    and "nil"
+      or
+      stringtest(t) and '\"'..t..'\"'
+      or
+      numbertest(t) and tonumber(t)
+      or
+      tabletest(t) and "{"..writeT(t).."}"
+      or
+      lambdatest(t) and tostring(t)
+      or
+      t and "not nil" -- PRAGMA
+      or
+      error ("Dont know how to pretty print")
+   end
+   return #arg > 0 and write1(t).."\t"..write(unpack(arg))
+          or
+          t and write1(t)
+          or 
+          "nil"
+end
+
+
+-- intended for human understanding, like pretty but with all keys printed
+tabulate = function (t, ...)
    display1 = function (t) return
       niltest(t)    and "nil"
       or
-      stringtest(t) and string.format('%q',t)
+      stringtest(t) and t
       or
       numbertest(t) and best(t)
       or
@@ -83,6 +140,19 @@ tabulate = function (t, ...)
       or
       "nil"
    end
+   displayT = function (t)
+      io.write ("(")
+      local continue=nil
+      for k,v in pairs(t) do 
+         if continue then io.write(" ") end
+         continue=not nil
+         io.write(k,"=")
+         io.write(display1(v))
+         io.stdout:flush()
+      end
+      io.write (")")
+      return not nil
+   end
    return #arg > 0 and io.write(display1(t), "\t") and display(unpack(arg))
           or
           t and io.write(display1(t), "\n")
@@ -90,50 +160,8 @@ tabulate = function (t, ...)
           io.write("\n")
 end
 
-write = function (t, ...)
-   displayL = function (t)
-      io.write ("(")
-      for k,v in pairs(t) do 
-         io.write(display1(v))
-         io.stdout:flush()
-         dummy = (k==#t) or io.write(" ")
-      end
-      io.write (")")
-      return not nil
-   end
-   display1 = function (t) return
-      niltest(t)    and "#f"
-      or
-      stringtest(t) and string.format('%q',t)
-      or
-      numbertest(t) and best(t)
-      or
-      lambdatest(t) and tostring(t)
-      or
-      tabletest(t)  and displayL(t) and ""
-      or
-      t and "#t" -- PRAGMA
-      or
-      "#f"
-   end
-   return #arg > 0 and io.write(display1(t), "\t") and display(unpack(arg))
-          or
-          t and io.write(display1(t), "\n")
-          or 
-          io.write("\n")
-end
 
 display = function (t, ...)
-   displayH = function (t)
-      io.write ("(")
-      for k,v in pairs(t) do 
-         io.write(display1(v))
-         io.stdout:flush()
-         dummy = (k==#t) or io.write(" ")
-      end
-      io.write (")")
-      return not nil
-   end
    display1 = function (t) return
       niltest(t)    and "nil"
       or
@@ -149,10 +177,37 @@ display = function (t, ...)
       or
       "nil"
    end
+   displayH = function (t)
+      io.write ("(")
+      local continue=nil
+      for k,v in pairs(t) do
+         if continue then io.write(" ") end
+         continue=not nil
+         io.write(display1(v))
+         io.stdout:flush()
+      end
+      io.write (")")
+      return not nil
+   end
    return #arg > 0 and io.write(display1(t), "\t") and display(unpack(arg))
           or
           t and io.write(display1(t), "\n")
           or 
           io.write("\n")
 end
+
+--[[
+--pretty=write
+print(pretty(nil))
+print(pretty(not nil))
+print(pretty(2))
+print(pretty(2,3,"end"))
+print(pretty(2,nil,3))
+print(pretty("test"))
+print(pretty({1,2,"dummy",3},"next"))
+print(pretty({1,{33,22},"dummy",3}))
+print(pretty({1,{33,22},"dummy",3,e="4",f=22}))
+print(pretty({1,{33,nil,22},"dummy",3,e="4",f=22,77}))
+print(pretty({1,{33,nil,22,{"this","as","well"}},"dummy",3,e="4",f=22,77, "that"}))
+--]]
 
