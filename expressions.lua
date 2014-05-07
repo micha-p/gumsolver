@@ -17,7 +17,7 @@ esqu=function(x,  root) c=SQUARE(x,root);  c["info"]="²";table.insert(CONSTRAIN
 esqr=function(x,  root) c=SQROOT(x,root);  c["info"]="®";table.insert(CONSTRAINTS,c);return root end
 eexp=function(x,  root) c=FNEXP(x,root);   c["info"]="exp";table.insert(CONSTRAINTS,c);return root end
 elog=function(x,  root) c=FNLOG(x,root);   c["info"]="log";table.insert(CONSTRAINTS,c);return root end
-eval=function(  v,root) c=CONST (root,v  );c["info"]="=";table.insert(CONSTRAINTS,c);return root end
+eval=function(  v,root) c=CONST (root,v);  c["info"]="=";table.insert(CONSTRAINTS,c);return root end
 eargmin=function(target,root) c=FNARGMIN(root,target); c["info"]="argmin";table.insert(CONSTRAINTS,c);return root end
 
 function run (connector, val , abs , rel) 
@@ -82,7 +82,9 @@ function EVAL(expr, rootconnector)
           or
           infix=="^" and error("Only squares and square roots allowed",PRINTV(op1),PRINTV(op2))
    end
-return stringtest(expr) and ensure_symbol_and_probe(expr)
+return stringtest(expr) and extract_value(expr) and eval(vreader(expr), ensure_symbol("="..table.count(CONNECTORS) + 1))
+       or
+       stringtest(expr) and ensure_symbol_and_probe(expr)
        or
        numbertest(expr) and eval (vnew(expr), ensure_symbol("="..table.count(CONNECTORS) + 1))
        or

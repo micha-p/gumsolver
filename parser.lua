@@ -1,9 +1,16 @@
 NAMEPATTERN   	= "%a[%w%.%_]*[%w]*[%']*"
 NUMBERPATTERN 	= "-?[%d._]+"
-VALUEPATTERN 	= NUMBERPATTERN.."%s?%+?[%±%%-]?%s?"..NUMBERPATTERN
+VALUEPATTERN 	= NUMBERPATTERN.."%s*%+%-%s*"..NUMBERPATTERN.."%%?"
+VALUEPATTERNISO	= NUMBERPATTERN.."%s*%±%s*"..NUMBERPATTERN.."%%?"
 ARGPATTERN    	= "[^)]+"
 UNITPATTERN   	= "%[.+%]"
 EXPRPATTERN	= "[%a%*%/%+%-%(%)%^]"
+
+function extract_value (s)
+return s:match("^%s*("..VALUEPATTERN..")%s*")
+       or
+       s:match("^%s*("..VALUEPATTERNISO..")%s*")
+end 
 
 function extract_left (s)
 return s:match("^%s*(.*[^%s])%s*=")
@@ -49,15 +56,16 @@ function parse (str)
       function skipspace() return check_pattern ("%s*") end
       function opening()   return check_pattern ("%(") end  
       function closing()   return check_pattern ("%)") end  
+      function value()     return check_pattern (VALUEPATTERN) or check_pattern (VALUEPATTERNISO) end  
       function operator()  return check_pattern ("[%+%-%*%/%^]") end  
       function exp()       return check_pattern ("exp ?%(") end  
       function log()       return check_pattern ("log ?%(") end 
-      function log()        return check_pattern ("ln ?%(") end 
+      function log()       return check_pattern ("ln ?%(") end 
       function min()       return check_pattern ("min ?%(") end 
       function argmin()    return check_pattern ("argmin ?%(") end 
       function variable()  return check_pattern (NAMEPATTERN) end  
       function number()    return extract_number( check_pattern (NUMBERPATTERN)) end 
-      function operand()   return func() or variable() or number() or subexpression() or nil end
+      function operand()   return func() or variable() or value() or number() or subexpression() or nil end
       
       function subexpression()
          if opening() then 
@@ -100,7 +108,7 @@ function parse (str)
       skipspace()
       e[i]=operand()
       skipspace()
-      for a in operator do
+      for a in plusminus or operator do
          i=i+1
          e[i]=a
          skipspace()

@@ -18,10 +18,10 @@ end
 function vnew (v, D, d) return vfast( v , D and D^2, d and d^2) end
 function vinv (a)       return vfast (- a.v, a.D2, a.d2) end 
 function vrec (a)       return vfast (1/a.v, nil , a.d2) end 
-function vadd (a, b)    return vfast (a.v + b.v , a.D2 and b.D2 and a.D2 + b.D2, nil) end 
-function vsub (a, b)    return vfast (a.v - b.v , a.D2 and b.D2 and a.D2 + b.D2, nil) end
-function vmul (a, b)    return vfast (a.v * b.v , nil, a.d2 and b.d2 and a.d2 + b.d2) end
-function vdiv (a, b)    return vfast (a.v / b.v , nil, a.d2 and b.d2 and a.d2 + b.d2) end
+function vadd (a, b)    return vfast (a.v + b.v , a.D2 and b.D2 and a.D2 + b.D2 or a.D2 or b.D2, nil) end 
+function vsub (a, b)    return vfast (a.v - b.v , a.D2 and b.D2 and a.D2 + b.D2 or a.D2 or b.D2, nil) end
+function vmul (a, b)    return vfast (a.v * b.v , nil, a.d2 and b.d2 and a.d2 + b.d2 or a.d2 or b.d2) end
+function vdiv (a, b)    return vfast (a.v / b.v , nil, a.d2 and b.d2 and a.d2 + b.d2 or a.d2 or b.d2) end
 function vamp (a, s)    return vfast (a.v * s ,   nil, a.d2) end    				-- relative error identical
 function vsqu (a)       return vnew  (a.v ^ 2 ,   nil, a.d2 and a.d2^0.5 * 2) end    		-- relative error doubled
 function vcub (a)       return vnew  (a.v ^ 3 ,   nil, a.d2 and a.d2^0.5 * 3) end    		-- relative error three times

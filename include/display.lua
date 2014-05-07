@@ -53,7 +53,7 @@ best = function (n, precision)
    end
 end
 
--- formatting to human readable string: best numbers, no quotes, only string keys
+-- formatting to human readable string: best numbers, no quotes for strings, no list separator, only string keys
 -- numeric keys are ordered before string keys
 
 function pretty(t, ...)

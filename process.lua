@@ -14,59 +14,59 @@ function process_line (input)
    if MASK then reservemaskline(name) end
    if string.find (input, "=") then
       local left=extract_left(input)
-      local right=extract_right(input)
+      local right=extract_right(input) or ""
       local name=extract_name(left)
-      local expr=extract_expr(right)
-      assert(left and right,"Can't understand equation:"..input.."$")
+      assert(left and right,"Can't understand equation: "..input.."$")
       if left == name then 
-         if string.match (expr, "^%s*$") then	    				-- name =
+         if string.match (right, "^%s*$") then	    				-- name =
             if DEBUG then print(warn(PRINT16(name), "=\t .")) end
             run(ensure_symbol_and_probe (name))
-         elseif string.match (expr, "^%s*%.%s*$") then    			-- name = .
+         elseif string.match (right, "^%s*%.%s*$") then    			-- name = .
             if DEBUG then print(warn(PRINT16(name), "=\t .")) end
             run(ensure_symbol_and_probe (name))
-         elseif string.match (expr, "^%s*"..NUMBERPATTERN.."%s*$") then    	-- name = number
-            local val = vreader(expr)
-            if DEBUG then print(warn(PRINT16(name), "=\t", expr)) end
+         elseif string.match (right, "^%s*"..NUMBERPATTERN.."%s*$") then    	-- name = number
+            local val = vreader(right)
+            if DEBUG then print(warn(PRINT16(name), "=\t", right)) end
             run(ensure_symbol_and_probe (name), val)
-         elseif string.match (expr, "^%s*"..VALUEPATTERN.."%s*$") then    	-- name = value +- uncertainty
-            local val = vreader(expr)
-            if DEBUG then print(warn(PRINT16(name), "=\t", expr)) end
+         elseif extract_value(right) then   				 	-- name = value +- uncertainty
+            local val = vreader(right)
+            if DEBUG then print(warn(PRINT16(name), "=\t", right)) end
             run(ensure_symbol_and_probe (name), val)
-         elseif string.match (expr, "^%s*"..NAMEPATTERN.."%s*$") then      	-- name = name
+         elseif string.match (right, "^%s*"..NAMEPATTERN.."%s*$") then      	-- name = name
             local a = ensure_symbol_and_probe (name)
-            local b = ensure_symbol_and_probe (expr)
+            local b = ensure_symbol_and_probe (right)
             pipe (a, b, RET, RET)
-            if DEBUG then print(warn(PRINT16(name), "=\t", expr)) end
-         elseif  string.find (expr, EXPRPATTERN) then				-- name = expression
+            if DEBUG then print(warn(PRINT16(name), "=\t", right)) end
+         elseif  string.find (right, EXPRPATTERN) then				-- name = expression
+            local expr=extract_expr(right)
             if DEBUG then print(warn(PRINT16(name), "=\t", pretty(unpack(order(parse(expr)))))) end
             DEFINITIONS[name]=expr
             EVAL(order(parse(expr)), ensure_symbol_and_probe (name))
          else
-            error ("Can't resolve right side: "..expr)
+            error ("Can't resolve right side: "..right)
          end
       else
          if string.match (left, "^%s*"..NUMBERPATTERN.."%s*$") then    		-- number = expr
-            local rexpr = pretty(order(parse(right)))
+            local rexpr = pretty(order(parse(right))):gsub("%s*","")
             local num = tonumber(extract_number(left))
             if DEBUG then print(warn(PRINT16(num), "=\t", rexpr)) end
             local b = ensure_symbol_and_probe (rexpr)
             pipe (EVAL(num), b, RET, RET)
             EVAL(order(parse(right)), b)
          elseif string.match (right, "^%s*"..NUMBERPATTERN.."%s*$") then    	-- expr = number
-            local lexpr = pretty(order(parse(left)))
+            local lexpr = pretty(order(parse(left))):gsub("%s*","")
             local num = tonumber(extract_number(right))
             if DEBUG then print(warn(lexpr, "=\t", num)) end
             local a = ensure_symbol_and_probe (lexpr)
             pipe (a, EVAL(num), RET, RET)
             EVAL(order(parse(left)), a)
-         elseif string.match (left, "^%s*"..VALUEPATTERN.."%s*$") then    	-- value +- uncertainty = expr
+         elseif extract_value(left) then    					-- value +- uncertainty = expr
             local val = vreader(left)
             if DEBUG then print(warn(PRINT16(val), "=\t", expr)) end
             error ("Values with uncertaninty are not allowed on left side. Use variable instead!")
          elseif  string.find (left, EXPRPATTERN) then               		-- expression = expression
-            local lexpr = pretty(order(parse(left)))
-            local rexpr = pretty(order(parse(right)))
+            local lexpr = pretty(order(parse(left))):gsub("%s*","")
+            local rexpr = pretty(order(parse(right))):gsub("%s*","")
             local a = ensure_symbol_and_probe (lexpr)
             local b = ensure_symbol_and_probe (rexpr)
             pipe (a, b, RET, RET)
@@ -80,10 +80,17 @@ function process_line (input)
       local expr=extract_expr(input)
       local name=extract_name(input)
       local unit=extract_unit(input)
-      if DEBUG then print(warn("left",left,"name",name,"expr",expr)) end
-      assert(name,"Can't find name"..input.."$")
-      if name ~= expr then							-- expression
-         local lexpr = pretty(order(parse(expr)))
+      assert(name or expr,"Can't understand: "..input.."$")
+      if string.match (input, "^%s*"..NUMBERPATTERN.."%s*$") then		-- number 
+         local num = tonumber(extract_number(input))
+         if DEBUG then print(warn(num)) end
+         print(num)
+      elseif extract_value(input) then 				  		-- value +- uncertainty
+         local val = vreader(input)
+         if DEBUG then print(warn(PRINT16(val))) end
+         print(PRINTX(val))
+      elseif name ~= expr then							-- expression
+         local lexpr = pretty(order(parse(expr))):gsub("%s*","")
          if DEBUG then print(warn(lexpr)) end
          local a = ensure_symbol_and_probe (lexpr)       	
          EVAL(order(parse(expr)), a)
