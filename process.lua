@@ -11,13 +11,13 @@ end
     
 function process_line (input)   
    if not input or input=="" then return end
-   if MASK then reservemaskline(name) end
    if string.find (input, "=") then
       local left=extract_left(input)
       local right=extract_right(input) or ""
       local name=extract_name(left)
       assert(left and right,"Can't understand equation: "..input.."$")
       if left == name then 
+         if MASK then reservemaskline(name) end
          if string.match (right, "^%s*$") then	    				-- name =
             if DEBUG then print(warn(PRINT16(name), "=\t .")) end
             run(ensure_symbol_and_probe (name))
@@ -50,12 +50,13 @@ function process_line (input)
             local rexpr = pretty(order(parse(right))):gsub("%s*","")
             local num = tonumber(extract_number(left))
             if DEBUG then print(warn(PRINT16(num), "=\t", rexpr)) end
-            local b = ensure_symbol_and_probe (rexpr)
+            local b = ensure_symbol (rexpr)
             pipe (EVAL(num), b, RET, RET)
             EVAL(order(parse(right)), b)
          elseif string.match (right, "^%s*"..NUMBERPATTERN.."%s*$") then    	-- expr = number
             local lexpr = pretty(order(parse(left))):gsub("%s*","")
             local num = tonumber(extract_number(right))
+            if MASK then reservemaskline(lexpr) end
             if DEBUG then print(warn(lexpr, "=\t", num)) end
             local a = ensure_symbol_and_probe (lexpr)
             pipe (a, EVAL(num), RET, RET)
@@ -68,7 +69,7 @@ function process_line (input)
             local lexpr = pretty(order(parse(left))):gsub("%s*","")
             local rexpr = pretty(order(parse(right))):gsub("%s*","")
             local a = ensure_symbol_and_probe (lexpr)
-            local b = ensure_symbol_and_probe (rexpr)
+            local b = ensure_symbol (rexpr)
             pipe (a, b, RET, RET)
             EVAL(order(parse(left)), a)
             EVAL(order(parse(right)), b)
@@ -80,6 +81,7 @@ function process_line (input)
       local expr=extract_expr(input)
       local name=extract_name(input)
       local unit=extract_unit(input)
+      if MASK then reservemaskline(name) end
       assert(name or expr,"Can't understand: "..input.."$")
       if string.match (input, "^%s*"..NUMBERPATTERN.."%s*$") then		-- number 
          local num = tonumber(extract_number(input))
