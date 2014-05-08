@@ -17,7 +17,7 @@ function process_line (input)
       local name=extract_name(left)
       assert(left and right,"Can't understand equation: "..input.."$")
       if left == name then 
-         if MASK then reservemaskline(name) end
+         -- if MASK then reservemaskline(name) end
          if string.match (right, "^%s*$") then	    				-- name =
             if DEBUG then print(warn(PRINT16(name), "=\t .")) end
             run(ensure_symbol_and_probe (name))
@@ -56,7 +56,6 @@ function process_line (input)
          elseif string.match (right, "^%s*"..NUMBERPATTERN.."%s*$") then    	-- expr = number
             local lexpr = pretty(order(parse(left))):gsub("%s*","")
             local num = tonumber(extract_number(right))
-            if MASK then reservemaskline(lexpr) end
             if DEBUG then print(warn(lexpr, "=\t", num)) end
             local a = ensure_symbol_and_probe (lexpr)
             pipe (a, EVAL(num), RET, RET)
@@ -81,7 +80,6 @@ function process_line (input)
       local expr=extract_expr(input)
       local name=extract_name(input)
       local unit=extract_unit(input)
-      if MASK then reservemaskline(name) end
       assert(name or expr,"Can't understand: "..input.."$")
       if string.match (input, "^%s*"..NUMBERPATTERN.."%s*$") then		-- number 
          local num = tonumber(extract_number(input))
@@ -91,18 +89,21 @@ function process_line (input)
          local val = vreader(input)
          if DEBUG then print(warn(PRINT16(val))) end
          print(PRINTX(val))
-      elseif name ~= expr then							-- expression
-         local lexpr = pretty(order(parse(expr))):gsub("%s*","")
-         if DEBUG then print(warn(lexpr)) end
-         local a = ensure_symbol_and_probe (lexpr)       	
-         EVAL(order(parse(expr)), a)
       elseif unit then
+         if MASK then reservemaskline(name) end
          local c = ensure_symbol_and_probe (name, ensure_symbol(name))		-- name [unit]
          c["scale"] = SCALE[unit]
          c["unit"] = unit
          if DEBUG then print(warn (name,unit)) end
          run(CONNECTORS[name])
+      elseif name ~= expr then							-- expression
+         local lexpr = pretty(order(parse(expr))):gsub("%s*","")
+         if DEBUG then print(warn(lexpr)) end
+         local a = ensure_symbol_and_probe (lexpr)       	
+         EVAL(order(parse(expr)), a)
       else
+         if MASK then reservemaskline(name) end
+         if DEBUG then print(warn (name)) end
          ensure_symbol_and_probe (name)       			 		-- name
          run(CONNECTORS[name])
       end

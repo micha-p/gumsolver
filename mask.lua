@@ -53,10 +53,10 @@ function jumptomaskline(name)
    local line = MASKTABLE[name]
    if line then 
       jumptoline(line)
-   else
-      table.insert(MASKARRAY,name)
-      MASKTABLE[name] = #MASKARRAY
-      jumptoend()
+   ---else
+      --table.insert(MASKARRAY,name)
+      --MASKTABLE[name] = #MASKARRAY
+      --jumptoend()
    end
 end
 
@@ -80,7 +80,7 @@ return not nil
 end
 
 function printmaskline (name, connector)
-   if name then
+   if name and MASKTABLE[name] then
       jumptomaskline (name)
       io.write("\27[K")  -- clear line
       oldprintprobe(name, connector)
