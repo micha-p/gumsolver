@@ -21,51 +21,42 @@ LIMIT   = 500
 function argmin_iter (agent, x, y, startx, starty)
    
    local n = 0
-   local xcache = start
-   local xscale = x["scale"] or 1
-   local yscale = y["scale"] or 1
-   local epsilon = NEW(0.001) --AMP(starty,0.01)
-   local step 	 = NEW(0.01) -- AMP(startx,0.01/xscale)
+   local xcache = startx
+   local ycache = starty
+   local epsilon = AMP (starty,0.001)
+   local step 	 = AMP (startx,0.01)
    local dleft, dright = epsilon, epsilon   
    
-   if ITER then
-      local xscaled 	= AMP(startx,  1/xscale)
-      local sscaled 	= AMP(step,    1/xscale)
-      local yscaled 	= AMP(starty,  1/yscale)
+   if ITER or DEBUG then
       print(warn("", PRINT16(x["name"]),PRINT16(""),PRINT16(y["name"]))) 
-      print(warn(n, PRINT16(xscaled),PRINT16(sscaled),PRINT16(yscaled),"\t\t",PRINT16(dleft),PRINT16(dright))) 
+      print(warn(n, PRINT16(xcache),PRINT16(step),PRINT16(ycache),"\t\t",PRINT16(dleft),PRINT16(dright))) 
    end
    
    
    local function check_above_epsilon (agent, x, y)
 
-      local xleft, xright, yleft, ycenter, yright
+      local xleft, xright, yleft, yright
 
-      xcache 	= x.get()     -- defined outside
+      xcache = x.get()		-- defined outside
+      ycache = y.get()		-- defined outside
       assert(xcache,"GUMSOLVER: source has no value!!!")
-      ycenter 	= y.get()
-      assert(ycenter,"GUMSOLVER: target has no value!!!")
-      ycenter 	= AMP(ycenter, 1/yscale)
-
+      assert(ycache,"GUMSOLVER: target has no value!!!")
       x.forget(agent)   
 
       xleft = SUB (xcache, step)
       x.set(agent, xleft)
-      yleft = AMP(y.get(), 1/yscale)
+      yleft = y.get()
       x.forget(agent)
 
       xright = ADD (xcache, step)
       x.set(agent, xright)
-      yright = AMP(y.get(), 1/yscale)
+      yright = y.get()
       x.forget(agent)
 
-      dleft = SUB(yleft,ycenter)    -- defined outside
-      dright = SUB(yright,ycenter)  -- defined outside
+      dleft = SUB(yleft,ycache)    -- defined outside
+      dright = SUB(yright,ycache)  -- defined outside
       if ITER then
-         local xscaled 	= AMP(xcache,  1/xscale)
-         local sscaled 	= AMP(step,    1/xscale)
-         local yscaled 	= AMP(ycenter, 1/yscale)
-         print(warn(n, PRINT16(xscaled),PRINT16(sscaled),PRINT16(ycenter),"\t\t",PRINT16(dleft),PRINT16(dright))) 
+         print(warn(n, PRINT16(xcache),PRINT16(step),PRINT16(ycache),"\t\t",PRINT16(dleft),PRINT16(dright))) 
       end
 
       return POS (SUB (dleft,epsilon)) or POS (SUB (dright,epsilon))
@@ -108,7 +99,7 @@ function argmin_constraint (a, target)  -- two connectors as pipe-constraint
        a.forget (origin)
        assert(not a.value(), "OPTIMIZER: can't release source")
        assert(not target.value(), "OPTIMIZER: can't release target")
-       local final = argmin_iter (agent, a, target, startx,starty)
+       local final = argmin_iter (agent, a, target, startx, starty)
        MUTE = mutestate
        a.set (origin, final)
        a.connect(me)
