@@ -26,7 +26,8 @@ function vdiv (a, b)    return vfast (a.v / b.v , nil, a.d2 and b.d2 and a.d2 + 
 function vamp (a, s)    return vfast (a.v * s ,   nil, a.d2) end    				-- relative error identical
 function vsqu (a)       return vnew  (a.v ^ 2 ,   nil, a.d2 and a.d2^0.5 * 2) end    		-- relative error doubled
 function vcub (a)       return vnew  (a.v ^ 3 ,   nil, a.d2 and a.d2^0.5 * 3) end    		-- relative error three times
-function vsqr (a)       return vnew  (a.v ^ 0.5,  nil, a.d2 and a.d2^0.5 / 2) end    		-- relative error halfed
+function vrt2 (a)       return vnew  (a.v ^ 0.5,  nil, a.d2 and a.d2^0.5 / 2) end    		-- relative error halfed
+function vrt3 (a)       return vnew  (a.v ^ 1/3,  nil, a.d2 and a.d2^0.5 / 3) end    		-- relative error one third
 function vexp (a)       return vnew  (math.exp(a.v), a.D2 and a.D2^0.5 * math.exp(a.v)) end	-- absolute error multiplied
 function vlog (a)       return vnew  (math.log(a.v), a.D2 and a.D2^0.5 / a.v) end           	-- absolute error divided
 function vmin (a, b)    return (a.v < b.v) and a or b end

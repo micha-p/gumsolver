@@ -124,9 +124,6 @@ function argmin_constraint (a, target)  -- two connectors as pipe-constraint
   return me
 end
 
-function cargmin(target) local z=make_connector(); argmin_constraint (z, target); return z end 
-function FNARGMIN (a,target) return argmin_constraint (a,target) end
-
 
 --[[
 

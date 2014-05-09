@@ -59,9 +59,9 @@ function parse (str)
       function value()     return check_pattern (VALUEPATTERN) or check_pattern (VALUEPATTERNISO) end  
       function operator()  return check_pattern ("[%+%-%*%/%^]") end  
       function exp()       return check_pattern ("exp ?%(") end  
-      function log()       return check_pattern ("log ?%(") end 
-      function log()       return check_pattern ("ln ?%(") end 
+      function log()       return check_pattern ("log ?%(") or check_pattern ("ln ?%(") end 
       function min()       return check_pattern ("min ?%(") end 
+      function partial()   return check_pattern ("partial ?%(") end 
       function argmin()    return check_pattern ("argmin ?%(") end 
       function variable()  return check_pattern (NAMEPATTERN) end  
       function number()    return extract_number( check_pattern (NUMBERPATTERN)) end 
@@ -75,7 +75,7 @@ function parse (str)
          return s
       end
    
-      function dualfunc (symbol)
+      function dualfunc (string)
          skipspace()
          local a = operand()
          skipspace()
@@ -84,7 +84,7 @@ function parse (str)
          local b = operand()
          skipspace()
          if not closing() then error("closing bracket for argument list: "..symbol.." "..str) end
-         return {a, symbol, b}
+         return {a, string, b}
       end
 
       function func()
@@ -102,6 +102,8 @@ function parse (str)
             return {1, "argmin", s}
          elseif min() then
             return dualfunc("min")
+         elseif partial() then
+            return dualfunc("partial")
          end
       end
    
@@ -121,8 +123,8 @@ function parse (str)
       return #e==1 and e[1] or e , pos
    end
    
-   local s=string.gsub(str,"²","^2")
-   return expression (s,1, #s,1)
+   local s = string.gsub(string.gsub(str,"³","^3"),"²","^2")
+   return expression (s ,1, #s, 1)
 end
 
 function uncurry (expr)
