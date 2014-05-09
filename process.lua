@@ -130,7 +130,7 @@ function process_directive(line)
    return 
       line:find("^#P") and (TABLE or RECORD) and  warn (out or "")
       or
-      line:find("^#P") and MASK and printfullmaskline (out or "")
+      line:find("^#P") and MASK and printmaskremarkline (out or "")
       or
       line:find("^#P") and (print (out or "") or not nil)
       or

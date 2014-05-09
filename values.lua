@@ -17,6 +17,7 @@ end
 
 function vnew (v, D, d) return vfast( v , D and D^2, d and d^2) end
 function vinv (a)       return vfast (- a.v, a.D2, a.d2) end 
+function vabs (a)       return vfast (math.abs(a.v), a.D2, a.d2) end 
 function vrec (a)       return vfast (1/a.v, nil , a.d2) end 
 function vadd (a, b)    return vfast (a.v + b.v , a.D2 and b.D2 and a.D2 + b.D2 or a.D2 or b.D2, nil) end 
 function vsub (a, b)    return vfast (a.v - b.v , a.D2 and b.D2 and a.D2 + b.D2 or a.D2 or b.D2, nil) end

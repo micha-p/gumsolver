@@ -23,7 +23,6 @@ function process_table(DELIMITER, filehandle)
    for k,v in ipairs(colnames) do io.write(PRINT16(CONNECTORS[v]["unit"] or ""),"\t") end
    print()
    for linenumber, one_line in ipairs(records) do 
-      clear_tableline(colnames)
       if stringtest(one_line) and one_line:find("^#[A-Z]") then
          if one_line:find("^#Q") then
             break
@@ -31,6 +30,7 @@ function process_table(DELIMITER, filehandle)
             process_directive(one_line)
          end
       else
+         clear_tableline(colnames)
          for colnum, field in ipairs(one_line) do process_line(field) end
          for k,v in ipairs(colnames) do io.write(PRINT16(PRINTX(get_scaled_val_from_connector(CONNECTORS[v]))).."\t") end
          print()

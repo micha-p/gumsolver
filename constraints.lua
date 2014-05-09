@@ -154,7 +154,7 @@ function make_connector()
        informant = nil
        for k,v in ipairs (actors) do 
           if v ~= retractor then 
-             if TRACE and DEBUG then print ("informs about loss ", v) end
+             if TRACE and DEBUG then print (me["class"].." informs about loss ", v) end
              v.lost()
           end 
        end

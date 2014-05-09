@@ -2,8 +2,8 @@ CLIPBOARD=nil
 UNDONAME=nil
 UNDOVALUE=nil
 VALUECOLUMN=33
-MASKTABLE={}  -- lines for connector names
-MASKARRAY={}  -- array of connector names and remarks
+MASKTABLE={}  -- lookup table to get linenumber from connector name
+MASKARRAY={}  -- ipairs of line and connectornames or remarks
 CURRENTLINE=0
 
 
@@ -70,7 +70,20 @@ function reservemaskline(name)
    printmaskline (name)
 end
 
-function printfullmaskline (string)
+function printfullmask()
+      io.write ("\27[H\27[J")   -- clear screen
+      for line,entry in ipairs(MASKARRAY) do
+         if CONNECTORS[entry] then 
+            oldprintprobe (entry, CONNECTORS[entry])
+         else
+            print (entry)
+         end
+      end
+      jumptoend()
+end
+
+
+function printmaskremarkline (string)
    table.insert(MASKARRAY,string)
    jumptoend ()
    io.write("\27[K") -- clear to end of line
@@ -107,13 +120,14 @@ end
 function handleinput()
       jump_below()
       io.write("\27[K\27[J") -- clear to end of screen
-      io.write(PROMPT or "")
+      io.write(PROMPT or "> ")
       local i = io.read()
       if i then 
          process_input (i)
       else
          return nil
       end
+      jumptoend()
 end
 
 function handleinteraction(line, char,name,connector,x)
@@ -124,7 +138,7 @@ function handleinteraction(line, char,name,connector,x)
    elseif char=="\t" then							-- input
       io.write("\27[".. line ..";"..VALUECOLUMN.."H")
       io.write("\27[K")
-      io.write("")
+--      io.write("")
       local i = io.read()
       if i and i~="" then 
          process_input(name)
@@ -132,10 +146,18 @@ function handleinteraction(line, char,name,connector,x)
       end
    elseif char=="-" then    							-- ~80% ~80% ~80% = 50%
       process_line(name)
-      process_line(name.."="..PRINTX(vamp(x, math.pow (1/2, 1/3))))
+      if x then 
+      	 process_line(name.."="..PRINTX(vamp(x, math.pow (1/2, 1/3))))
+      else
+         process_line(name.."=1")
+      end   
    elseif char=="+" then    							-- ~125% ~125% ~125% = 200%
       process_line(name)
-      process_line(name.."="..PRINTX(vamp(x, math.pow (2, 1/3))))
+      if x then 
+	 process_line(name.."="..PRINTX(vamp(x, math.pow (2, 1/3))))
+      else
+         process_line(name.."=1")
+      end   
    elseif char=="\03" then    							-- copy
       CLIPBOARD = x
    elseif char=="\24" then    							-- cut
@@ -146,6 +168,8 @@ function handleinteraction(line, char,name,connector,x)
       process_line(name.."=".. PRINTX(CLIPBOARD))
    elseif char=="\26" then    							-- undo
       if UNDONAME then process_line(UNDONAME.."=".. PRINTX(UNDOVALUE)) end
+   elseif char=="\18" then    							-- refresh
+      printfullmask()
    else
       io.write ("\a")
    end
@@ -177,8 +201,6 @@ function handlechar(char)
       local connector = name and CONNECTORS[name]
       if connector and (not connector.value() or connector.value()=="user") then
          local x = get_scaled_val_from_connector(connector)
-         UNDONAME=name
-         UNDOVALUE=x
          handleinteraction(line, char, name, connector,x)
          printmaskline (name, connector)
          jumptoline(line)

@@ -19,6 +19,7 @@ EXP = vexp
 LOG = vlog
 MIN = vmin
 LIM = vlim
+ABS = vabs
 
 -- GLOBALS
 EQUAL   = function (a,b) return a.v == b.v and a.D2 == b.D2 end 

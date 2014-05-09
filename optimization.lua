@@ -23,12 +23,12 @@ function argmin_iter (agent, x, y, startx, starty)
    local n = 0
    local xcache = startx
    local ycache = starty
-   local epsilon = AMP (starty,0.001)
-   local step 	 = AMP (startx,0.01)
+   local epsilon = AMP (starty,0.0001)
+   local step 	 = AMP (startx,0.1)
    local dleft, dright = epsilon, epsilon   
    
    if ITER or DEBUG then
-      print(warn("", PRINT16(x["name"]),PRINT16(""),PRINT16(y["name"]))) 
+      print(warn("     ", PRINT16(x["name"]),PRINT16(""),PRINT16(y["name"]))) 
       print(warn(n, PRINT16(xcache),PRINT16(step),PRINT16(ycache),"\t\t",PRINT16(dleft),PRINT16(dright))) 
    end
    
@@ -53,21 +53,21 @@ function argmin_iter (agent, x, y, startx, starty)
       yright = y.get()
       x.forget(agent)
 
-      dleft = SUB(yleft,ycache)    -- defined outside
+      dleft = SUB(ycache,yleft)    -- defined outside
       dright = SUB(yright,ycache)  -- defined outside
       if ITER then
          print(warn(n, PRINT16(xcache),PRINT16(step),PRINT16(ycache),"\t\t",PRINT16(dleft),PRINT16(dright))) 
       end
 
-      return POS (SUB (dleft,epsilon)) or POS (SUB (dright,epsilon))
+      return POS(SUB(ABS(dleft),epsilon)) or POS(SUB(ABS(dright),epsilon))
    end
 
    while check_above_epsilon (agent, x, y) do
       assert (n < LIMIT, "RECURSION REACHES LIMIT!!!")
-      if NEG(dleft) and POS(dright) then 
+      if POS(dleft) and POS(dright) then 
          xn = SUB(xcache,step)     
          x.set(agent, xn)			-- move left
-      elseif POS(dleft) and NEG(dright) then
+      elseif NEG(dleft) and NEG(dright) then
          xn = ADD(xcache,step)
          x.set(agent, xn)			-- move right
       else 
@@ -80,6 +80,7 @@ function argmin_iter (agent, x, y, startx, starty)
    return xcache
 end
 
+ITERLOOP=nil
 
 function argmin_constraint (a, target)  -- two connectors as pipe-constraint
   local me = {}
@@ -87,28 +88,32 @@ function argmin_constraint (a, target)  -- two connectors as pipe-constraint
   local agent = "argmin"
 
   local function process_new_value ()
-    if a.value() and target.value() and not me["iter"] and a.value()~=agent and a.value()=="user" then 
-       if TRACE then print(warn ("OPTIMIZER: Received", a.value(), target.value(), PRINT16(a.get()), PRINT16(target.get()))) end
-       me["iter"] = not nil
-       a.disconnect(me)
+    if a.value() and target.value() and (not ITERLOOP) and a.value()~=agent and a.value()=="user" then 
+       if DEBUG then print(warn ("OPTIMIZER: Start", a.value(), target.value(), PRINT16(a.get()), PRINT16(target.get()))) end
+       ITERLOOP = not nil
+       -- a.disconnect(me)
        local mutestate = MUTE
+       local tracestate=TRACE
        local origin = a.value()
        local startx  = a.get()
        local starty  = target.get()
        MUTE = not nil
+       TRACE=nil
        a.forget (origin)
        assert(not a.value(), "OPTIMIZER: can't release source")
        assert(not target.value(), "OPTIMIZER: can't release target")
        local final = argmin_iter (agent, a, target, startx, starty)
+       TRACE=tracestate
        MUTE = mutestate
        a.set (origin, final)
-       a.connect(me)
-       me["iter"] = nil
+       assert(final==a.get(), "OPTIMIZER: can't set final")
+       -- a.connect(me)   		-- this triggers another iteration
+       ITERLOOP = nil
     end
   end
   local function process_forget_value ()
-    -- a.forget(me)		-- ignore messages from target
-    target.forget(me)
+    if not a.value() then target.forget(me) end
+    if not target.value() then a.forget(me) end
   end
   me = make_actor (process_new_value, process_forget_value) 
   me["setters"]  = function () return actors end

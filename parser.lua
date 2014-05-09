@@ -1,4 +1,4 @@
-NAMEPATTERN   	= "%a[%w%.%_]*[%w]*[%']*"
+NAMEPATTERN   	= "[%aδ][%w%.%_δ]*[%w]*[%']*"
 NUMBERPATTERN 	= "-?[%d._]+"
 VALUEPATTERN 	= NUMBERPATTERN.."%s*%+%-%s*"..NUMBERPATTERN.."%%?"
 VALUEPATTERNISO	= NUMBERPATTERN.."%s*%±%s*"..NUMBERPATTERN.."%%?"
@@ -29,7 +29,7 @@ return s:match("%s*"..NAMEPATTERN.."%s*("..UNITPATTERN..")%s*=?")
 end 
 
 function extract_expr (s)
-return s:match("%s*(.*)%s*$")
+return s:match("%s*(.*[^%s])%s*$")
 end 
 
 function extract_number (s)
