@@ -2,6 +2,7 @@
 
 package.path = package.path .. ";include/?.lua"
 require 'display'
+require 'stderr'
 require 'table'
 
 require 'constraints_with_values'   	-- PRINTX redefined
@@ -15,6 +16,7 @@ require 'records'
 require 'mask'				-- overwrite printprobe
 require 'trace'
 require 'optimization'
+require 'differentiation'
 
 
 
@@ -114,11 +116,17 @@ while arg and arg[1] do
    TRACE    = TRACE    or arg[1]=="-TRACE"   and not TRACE
    ITER     = ITER     or arg[1]=="-ITER"    and not ITER
    DEBUG    = DEBUG    or arg[1]=="-DEBUG"   and not DEBUG
+   TABLE    = TABLE    or arg[1]=="-TABLE"   and not TABLE
    TABLE    = TABLE    or arg[1]=="-t"       and not TABLE
    MASK     = MASK     or arg[1]=="-MASK"    and not MASK
    RECORD   = RECORD   or arg[1]=="-R"       and not RECORD
-   MUTE     = MUTE     or arg[1]=="-q"       and not MUTE
-   BEST     = BEST     or arg[1]=="-BEST"
+   MUTE     = MUTE     and not (arg[1]=="-VERBOSE")
+   MUTE     = MUTE     or (arg[1]=="-MASK")  and not MUTE
+   MUTE     = MUTE     or (arg[1]=="-TABLE") and not MUTE
+   MUTE     = MUTE     or (arg[1]=="-t")     and not MUTE
+   MUTE     = MUTE     or (arg[1]=="-MUTE")  and not MUTE
+   MUTE     = MUTE     or (arg[1]=="-q")     and not MUTE
+   BEST     = BEST     or (arg[1]=="-BEST")
    BEST     = BEST     and not (arg[1]=="-FULL")
    ERRORS   = ERRORS   or arg[1]=="-ERRORS"
    ERRORS   = ERRORS   and not (arg[1]=="-SUPPRESS") 

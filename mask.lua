@@ -65,9 +65,9 @@ function reservemaskline(name)
    if not line then 
       table.insert(MASKARRAY,name)
       MASKTABLE[name] = #MASKARRAY 
-      if DEBUG then warn ("reserved maskline", name, #MASKARRAY) end
+      if DEBUG then print2(warn ("reserved maskline", name, #MASKARRAY)) end
    end
-   printmaskline (name)
+   printmaskline (name, CONNECTORS[name])
 end
 
 function printfullmask()

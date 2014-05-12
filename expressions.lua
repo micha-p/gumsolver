@@ -41,7 +41,7 @@ function run (connector, val , abs , rel)
 end
 
 function ensure_symbol (name, connector)
-   if TRACE then print(warn("Ensure",name,CONNECTORS[name])) end
+   if TRACE then print2(warn("Ensure",name,CONNECTORS[name])) end
    if not CONNECTORS[name] then 
       CONNECTORS[name]= connector or make_connector()
    end
@@ -51,7 +51,7 @@ return c
 end
 
 function ensure_symbol_and_probe(name, connector)
-   if TRACE then print(warn("Ensure",name,CONNECTORS[name],PROBES[name],CONNECTORS[name] and CONNECTORS[name]["unit"])) end
+   if TRACE then print2(warn("Ensure probe",name,CONNECTORS[name],PROBES[name],CONNECTORS[name] and CONNECTORS[name]["unit"])) end
    if not CONNECTORS[name] then ensure_symbol (name, connector) end
    if not PROBES[name] then 
          PROBES[name] = probe (name, CONNECTORS[name]) 

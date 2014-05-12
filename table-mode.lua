@@ -1,6 +1,6 @@
 function clear_tableline (columns)
    for n,name in pairs(columns) do 
-      if DEBUG then print(warn("CLEAR "..name)) end
+      if DEBUG then print2(warn("CLEAR "..name)) end
       run (CONNECTORS[name])
    end
 end

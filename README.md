@@ -10,13 +10,6 @@ A command line tool is provided, which can work on files or tables or can be use
 So far, the list of commands is NOT stable but constantly modificated according to de needs of some private real world examples.
 
 
-## News
-
-- for interactive exploration of the rules network, a mask mode is available now
-- trailing stars or apostrophes in symbol names
-- declaration of arbitrary units or scale
-
-
 ## Theory
 
 There are two main types of objects: Connectors keep the values, a list of listeners and basically understand two signals for setting their values. Whenever they get such a signal from any informant, they inform all listeners except the informer whether they got a new value or they lost their value.
@@ -36,7 +29,9 @@ cat demo/tableformula.txt | ./gumsolver -d "\t" -t
 ./gumsolver -d , -t -q -f demo/tableformula.csv  
 rlwrap ./gumsolver -I
 
-## Modes of operation
+## Modes of operation and their output 
+
+TODO: Consistant naming on command line and in directives
 
 As default, gumsolver works in a *pipe* mode, accepting input from standard input and sending the evaluated results to standard output. Several other modes affect input as well as output and might be suitably combined. 
 
@@ -47,11 +42,18 @@ Input can be supplied line by line, either in a stream, from a file or at the co
 These normal modes of operation can be complemented by additional information on the standard error port. In *debug* mode, where all input is further explained and in *trace* mode, where all changes in state are encountered.
 
 
-
 ## Command line and arguments
 
-Arguments given on the command line are evaluated from left to right and it is possible to use switches and file input multiple times. Options and directives are as close as possible to the same directives except for the leading character (TODO) and the additional options for showing help and version.
+TODO: Consistant naming on command line and in directives
 
+Arguments given on the command line are evaluated strictly from left to right and it is possible to use switches and file input multiple times. Options and directives are as close as possible to the same directives except for the leading character (TODO) and the additional options for showing help and version.
+
+Switches affecting the kind of output of uncertainties: ABSOLUTE(default) RELATIVE SUPPRESS   
+Switches affecting the kind of output and mode of operation: STDIN(default) TABLE MASK PROMPT QUIT  
+Switches affecting the amount of output: VERBOSE(default) MUTE(implied by TABLE and MASK)   
+Switches affecting additional information on stderr: DEBUG ITER TRACE   
+Commands for printing one block of output: RECORD HELP VERSION  
+Commands for printing one block of output on stderr: DUMP  
 
 ## Commands for interactions and pipelined files
 
@@ -60,7 +62,7 @@ Arguments given on the command line are evaluated from left to right and it is p
 	a=12+-3%  Assign value with uncertainty (percentage of value)
 	a         Forget value
 	a=b*c     Submit equation
-	c=        Set propagated value as user supplied (to be implemented)
+	c?	  Try to get value by actively searching for satisfied equations (TODO)
 
 ## Domain specific language
 
@@ -87,8 +89,16 @@ v+-u &emsp; v±u &emsp; v+-u% &emsp; v±u%
 
 Operators:  
 \+ - * / 
-^2 &emsp; ² &emsp; ^0.5 
+^2 ^3&emsp; ² &emsp; ³ &emsp; ^0.5 
 Order of precedence is as usual and might be modified by brackets
+
+Special functions (one optional space between name and bracket):  
+exp(x), e^x    
+log(x), ln(x)   as in Lua, there is only natural logarithm (easy to remember)
+min(a,b)   
+argmin(y)  the result is avalue, which minimizes y
+partial(y,x)   partial derivative of y regarding x
+integral(y,x1,x2) TODO 
 
 Equations:  
 a=b+c &emsp; a=b\*c &emsp; a=b\*(c-d) &emsp; ...
@@ -96,10 +106,27 @@ a=b+c &emsp; a=b\*c &emsp; a=b\*(c-d) &emsp; ...
 Functions(TODO):  
 f(x) = 2 * x + 1
 
+### Units
+
+In many cases, scaled values help to understanding the simulated network of variables. Therefore units can be provided in squared brackets together with an additional scale. These brackets are needed in all cases to distinguish variable names:
+
+[mm]	0.001	(the fraction of the internal value; change to 1000?) 
+[kg]	1000	
+[h]	3600	
+
+m [kg]	=> declare default unit for this variable
+t=1 
+t [h] = 3 => this input value is in [h] irrespective of any other declared unit        
+
+TODO: 
+At the moment, declarations of units have to be started with the directive #UNIT. Input values with units are not possible so far. But scaled input of course.
+Further: So far, units are stored in special objects, but they might be implemented as connectors as well. 
+
+
 ### Special commands and commandline arguments
 
 It is possible to submit special directives following a hash sign at the beginning of the line. 
-In many cases, the first letter is distinctive.
+In most cases, the first letter is distinctive and sufficient. Compare commandline options
 
 	#(A)BSOLUTE  	Switch to display absolute uncertainties (default)
 	#(R)ELATIVE  	Switch to display relative uncertainties
@@ -108,15 +135,15 @@ In many cases, the first letter is distinctive.
 	#(D)UMP 	Show network of constraints
 	#(T)ABLE     	Tabulate records (horizontally)
 	#REC(O)RD	Print, save and clear current state of connectors 
-	#(C)LONE     	Clones a connector with one name segment less. Prototype-based inheritance (TODO)
 	#TRACE   	Toggle tracing on/ off
-	#(V)ERBOSITY  	0=mute 1=normal 2=debug
+	#(V)ERBOSE  	show messages on changes of variables
+	#(M)UTE		no messages on changes of variables
 	#(H)ELP	   	Show help
 	#(Q)UIT	   	Stop processing regardless of any following content
 
 ### Comments 
 
-Comments start anywhere in a line with a hash-sign followed by any letter not used for directives and last until end of line.
+Comments might start anywhere in a line with a hash-sign followed by any letter not used for directives and last until end of line.
 	
 ## Fields and Records in horizontal and vertical modes
 

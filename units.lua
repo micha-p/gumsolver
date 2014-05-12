@@ -1,13 +1,11 @@
 --[[
 
-dimensions are annoying!!!
-
-possibilities: 
+Possible solutions:
 
 - special connectors for scales => twice as much connectors
 - scientific notation => annoying during input
 
-Best solution: scaled probes during declaration!
+Best: scaled probes during declaration!
 
 
 

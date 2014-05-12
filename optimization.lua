@@ -28,10 +28,10 @@ function argmin_iter (agent, x, y, startx, starty)
    local dleft, dright = epsilon, epsilon   
    
    if ITER or DEBUG then
-      print(warn("     ", PRINT16(x["name"]),PRINT16(""),PRINT16(y["name"]))) 
-      print(warn(n, PRINT16(xcache),PRINT16(step),PRINT16(ycache),"\t\t",PRINT16(dleft),PRINT16(dright))) 
+      print2(warn("ARGMIN:", PRINT16(x["name"]),PRINT16(""),PRINT16(y["name"]))) 
    end
    
+   if ITER then print2(warn(n, PRINT16(xcache),PRINT16(step),PRINT16(ycache),"\t\t",PRINT16(dleft),PRINT16(dright))) end 
    
    local function check_above_epsilon (agent, x, y)
 
@@ -39,8 +39,8 @@ function argmin_iter (agent, x, y, startx, starty)
 
       xcache = x.get()		-- defined outside
       ycache = y.get()		-- defined outside
-      assert(xcache,"GUMSOLVER: source has no value!!!")
-      assert(ycache,"GUMSOLVER: target has no value!!!")
+      assert(xcache,"OPTIMIZER: source has no value!!!")
+      assert(ycache,"OPTIMIZER: target has no value!!!")
       x.forget(agent)   
 
       xleft = SUB (xcache, step)
@@ -56,14 +56,14 @@ function argmin_iter (agent, x, y, startx, starty)
       dleft = SUB(ycache,yleft)    -- defined outside
       dright = SUB(yright,ycache)  -- defined outside
       if ITER then
-         print(warn(n, PRINT16(xcache),PRINT16(step),PRINT16(ycache),"\t\t",PRINT16(dleft),PRINT16(dright))) 
+         print2(warn(n, PRINT16(xcache),PRINT16(step),PRINT16(ycache),"\t\t",PRINT16(dleft),PRINT16(dright))) 
       end
 
       return POS(SUB(ABS(dleft),epsilon)) or POS(SUB(ABS(dright),epsilon))
    end
 
    while check_above_epsilon (agent, x, y) do
-      assert (n < LIMIT, "RECURSION REACHES LIMIT!!!")
+      assert (n < LIMIT, "OPTIMIZER: RECURSION REACHES LIMIT!!!")
       if POS(dleft) and POS(dright) then 
          xn = SUB(xcache,step)     
          x.set(agent, xn)			-- move left
@@ -75,7 +75,12 @@ function argmin_iter (agent, x, y, startx, starty)
          x.set(agent, xcache)
       end
       n = n + 1
+   end   
+
+   if ITER or DEBUG then
+      print2(warn(n, PRINT16(xcache),PRINT16(step),PRINT16(ycache),"\t\t",PRINT16(dleft),PRINT16(dright))) 
    end
+
    MUTE = nil
    return xcache
 end
@@ -88,8 +93,8 @@ function argmin_constraint (a, target)  -- two connectors as pipe-constraint
   local agent = "argmin"
 
   local function process_new_value ()
-    if a.value() and target.value() and (not ITERLOOP) and a.value()~=agent and a.value()=="user" then 
-       if DEBUG then print(warn ("OPTIMIZER: Start", a.value(), target.value(), PRINT16(a.get()), PRINT16(target.get()))) end
+    if (not ITERLOOP) and target.value() and (a.value()=="user" or not a.value()) then
+       -- if DEBUG then print2(warn ("OPTIMIZER: Start", a.value(), target.value(), PRINT16(a.get()), PRINT16(target.get()))) end
        ITERLOOP = not nil
        -- a.disconnect(me)
        local mutestate = MUTE
@@ -174,7 +179,7 @@ MUTE = nil
 TRACE = nil
 BEST = not nil
 
-FNARGMIN (X, M)
+argmin_constraint (X, M)
 
 X.set("user", 10)			-- works 1.871875
 --print("_________________ constraint second")
