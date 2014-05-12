@@ -121,7 +121,6 @@ while arg and arg[1] do
    MASK     = MASK     or arg[1]=="-MASK"    and not MASK
    RECORD   = RECORD   or arg[1]=="-R"       and not RECORD
    MUTE     = MUTE     and not (arg[1]=="-VERBOSE")
-   MUTE     = MUTE     or (arg[1]=="-MASK")  and not MUTE
    MUTE     = MUTE     or (arg[1]=="-TABLE") and not MUTE
    MUTE     = MUTE     or (arg[1]=="-t")     and not MUTE
    MUTE     = MUTE     or (arg[1]=="-MUTE")  and not MUTE

@@ -11,7 +11,7 @@ When a is set, this value is not just propagated, but taken as starting value fo
 Finally, when a globally defined epsilon is reached, a and target will hold the final values. 
 When a is unset, the target will loose its value too. 
 
-A user-supplied value to the target is not propagated, as a will be calculated by the other constraints. 
+The optimizer is triggered by a start value. See below for details.
 --]]
 
 
@@ -28,10 +28,10 @@ function argmin_iter (agent, x, y, startx, starty)
    local dleft, dright = epsilon, epsilon   
    
    if ITER or DEBUG then
-      print2(warn("ARGMIN:", PRINT16(x["name"]),PRINT16(""),PRINT16(y["name"]))) 
+      print2("ARGMIN:", PRINT16(x["name"] or ""),"\t\t",PRINT16(y["name"] or "")) 
    end
    
-   if ITER then print2(warn(n, PRINT16(xcache),PRINT16(step),PRINT16(ycache),"\t\t",PRINT16(dleft),PRINT16(dright))) end 
+   if ITER then print2(n, PRINT16(xcache),PRINT16(step),PRINT16(ycache),"\t\t",PRINT16(dleft),PRINT16(dright)) end 
    
    local function check_above_epsilon (agent, x, y)
 
@@ -56,7 +56,7 @@ function argmin_iter (agent, x, y, startx, starty)
       dleft = SUB(ycache,yleft)    -- defined outside
       dright = SUB(yright,ycache)  -- defined outside
       if ITER then
-         print2(warn(n, PRINT16(xcache),PRINT16(step),PRINT16(ycache),"\t\t",PRINT16(dleft),PRINT16(dright))) 
+         print2(n, PRINT16(xcache),PRINT16(step),PRINT16(ycache),"\t\t",PRINT16(dleft),PRINT16(dright))
       end
 
       return POS(SUB(ABS(dleft),epsilon)) or POS(SUB(ABS(dright),epsilon))
@@ -77,8 +77,8 @@ function argmin_iter (agent, x, y, startx, starty)
       n = n + 1
    end   
 
-   if ITER or DEBUG then
-      print2(warn(n, PRINT16(xcache),PRINT16(step),PRINT16(ycache),"\t\t",PRINT16(dleft),PRINT16(dright))) 
+   if DEBUG then
+      print2(n, PRINT16(xcache),PRINT16(step),PRINT16(ycache),"\t\t",PRINT16(dleft),PRINT16(dright))
    end
 
    MUTE = nil
@@ -93,10 +93,8 @@ function argmin_constraint (a, target)  -- two connectors as pipe-constraint
   local agent = "argmin"
 
   local function process_new_value ()
-    if (not ITERLOOP) and target.value() and (a.value()=="user" or not a.value()) then
-       -- if DEBUG then print2(warn ("OPTIMIZER: Start", a.value(), target.value(), PRINT16(a.get()), PRINT16(target.get()))) end
-       ITERLOOP = not nil
-       -- a.disconnect(me)
+    if (not ITERLOOP) and target.value() and (a.value()=="user" or a.value()==agent) then
+        ITERLOOP = not nil
        local mutestate = MUTE
        local tracestate=TRACE
        local origin = a.value()
@@ -110,15 +108,18 @@ function argmin_constraint (a, target)  -- two connectors as pipe-constraint
        local final = argmin_iter (agent, a, target, startx, starty)
        TRACE=tracestate
        MUTE = mutestate
-       a.set (origin, final)
+       a.set (agent, final)
        assert(final==a.get(), "OPTIMIZER: can't set final")
        -- a.connect(me)   		-- this triggers another iteration
        ITERLOOP = nil
     end
   end
-  local function process_forget_value ()
-    if not a.value() then target.forget(me) end
-    if not target.value() then a.forget(me) end
+  local function process_forget_value()
+    if not target.value() and a.value() and a.value()==agent then 
+       local source = a.get()
+       a.forget(agent)
+       a.set("user",source)
+    end
   end
   me = make_actor (process_new_value, process_forget_value) 
   me["setters"]  = function () return actors end
@@ -133,6 +134,9 @@ end
 --[[
 
 require 'constraints'
+package.path = package.path .. ";include/?.lua"
+require 'stderr'
+
 X = make_connector()
 Y = cmul(X,X)
 
@@ -175,7 +179,6 @@ X.forget("user")
 print("_________________ constraint")
 
 ITER = not nil
-MUTE = nil
 TRACE = nil
 BEST = not nil
 

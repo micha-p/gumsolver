@@ -6,7 +6,7 @@ function dump_connectors()
       local out=""
       for k,l in pairs(ltable) do 
          if l["class"] ~= "probe" then
-            out=out..table.find(CONSTRAINTS,l)..l["info"]
+            out=out..(table.find(CONSTRAINTS,l) or "")..(l["info"] or "")
          else
             if DEBUG then 
                out=out.."?"..table.find(PROBES,l) 
@@ -48,7 +48,7 @@ function dump_connectors()
    print()   
    print("CONSTRAINTS:\tSETTERS:")
    for k,v in pairs (CONSTRAINTS) do
-      name(k..v["info"])
+      name(k..(v["info"] or ""))
       printsetters(v.setters())
       print()
    end
