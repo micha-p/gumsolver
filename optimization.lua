@@ -90,10 +90,10 @@ ITERLOOP=nil
 function argmin_constraint (a, target)  -- two connectors as pipe-constraint
   local me = {}
   local actors = {a, target}
-  local agent = "argmin"
+  local agent = "argmin_ITER"
 
   local function process_new_value ()
-    if (not ITERLOOP) and target.value() and (a.value()=="user" or a.value()=="final") then
+    if (not ITERLOOP) and target.value() and (a.value()=="user" or a.value()=="argmin") then
         ITERLOOP = not nil
        local mutestate = MUTE
        local tracestate=TRACE
@@ -108,18 +108,14 @@ function argmin_constraint (a, target)  -- two connectors as pipe-constraint
        local final = argmin_iter (agent, a, target, startx, starty)
        TRACE=tracestate
        MUTE = mutestate
-       a.set ("final", final)
+       a.set ("argmin", final)
        assert(final==a.get(), "OPTIMIZER: can't set final")
        -- a.connect(me)   		-- this triggers another iteration
        ITERLOOP = nil
     end
   end
   local function process_forget_value()
-    if not target.value() and a.value() and a.value()=="final" then 
-       local source = a.get()
-       a.forget("final")
-       a.set("user",source)
-    end
+    if not target.value() then a.forget("argmin") end
   end
   me = make_actor (process_new_value, process_forget_value) 
   me["setters"]  = function () return actors end

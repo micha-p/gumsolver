@@ -65,7 +65,7 @@ function reservemaskline(name)
    if not line then 
       table.insert(MASKARRAY,name)
       MASKTABLE[name] = #MASKARRAY 
-      if DEBUG then print2(warn ("reserved maskline", name, #MASKARRAY)) end
+      if DEBUG then print2("reserved maskline", name, #MASKARRAY) end
    end
    printmaskline (name, CONNECTORS[name])
 end
@@ -74,7 +74,7 @@ function printfullmask()
       io.write ("\27[H\27[J")   -- clear screen
       for line,entry in ipairs(MASKARRAY) do
          if CONNECTORS[entry] then 
-            oldprintprobe (entry, CONNECTORS[entry])
+            printmaskline (entry, CONNECTORS[entry])
          else
             print (entry)
          end
@@ -98,6 +98,17 @@ function printmaskline (name, connector)
       io.write("\27[K")  -- clear line
       oldprintprobe(name, connector)
       jump_to_left ()
+      if DEBUG and CONNECTORS[name] then
+         jumptomaskline (name)
+         local c= CONNECTORS[name]
+         local s= c.value()
+         io.write("\27[".. CURRENTLINE ..";"..(VALUECOLUMN+16).."H")
+         io.write("\27[K")
+         if s and stringtest(s) then
+            io.write("("..s..")")
+         end
+         jumptomaskline (name)
+      end
    end
 end
 
@@ -135,7 +146,7 @@ function handleinteraction(line, char,name,connector,x)
       UNDONAME=name
       UNDOVALUE=get_scaled_val_from_connector(connector)
       process_input(name)
-   elseif char=="\t" then							-- input
+   elseif char=="\t" or char=="\n" then						-- input
       io.write("\27[".. line ..";"..VALUECOLUMN.."H")
       io.write("\27[K")
 --      io.write("")
