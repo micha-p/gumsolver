@@ -18,7 +18,7 @@ function csv_read(separator,filehandle)
        	    if i > #header then
       	       error ("To many input fields, check line endings!")
       	    else
-               table.insert(fields,header[i].."="..field)
+               table.insert(fields, field)
             end
          end
          table.insert(rtable,fields)

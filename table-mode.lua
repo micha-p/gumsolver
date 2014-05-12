@@ -31,7 +31,7 @@ function process_table(DELIMITER, filehandle)
          end
       else
          clear_tableline(colnames)
-         for colnum, field in ipairs(one_line) do process_line(field) end
+         for colnum, field in ipairs(one_line) do if field~="" then process_line(header[colnum].."="..field) end end
          for k,v in ipairs(colnames) do io.write(PRINT16(PRINTX(get_scaled_val_from_connector(CONNECTORS[v]))).."\t") end
          print()
       end
