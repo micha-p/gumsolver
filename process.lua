@@ -176,7 +176,7 @@ function process_directive(line)
       or
       line:find("^#T") and ((arg and tabulate_selected(rest)) or tabulate_record())
       or
-      line:find("^#D") and (dump_connectors() or not nil)
+      line:find("^#D") and (dump_connectors() or (DEBUG and dump_probes_and_constraints()) or not nil)
       or
       error ("Unknown directive in line: " .. line)
 end

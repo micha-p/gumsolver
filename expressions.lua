@@ -62,35 +62,36 @@ end
 function EVAL(expr, rootconnector)
    local function apply (op1, infix, op2)
       local root = rootconnector or ensure_symbol(infix..table.count(CONNECTORS) + 1)
-      local r = infix=="+" and eadd (op1, op2, root)
+      local c = infix=="+" and SUM (op1, op2, root)
           	or
-          	infix=="-" and esub (op1, op2, root)
+          	infix=="-" and DIFF (op1, op2, root)
           	or
-          	infix=="*" and emul (op1, op2, root)
+          	infix=="*" and PROD (op1, op2, root)
           	or
-          	infix=="/" and ediv (op1, op2, root)
+          	infix=="/" and RATIO (op1, op2, root)
           	or
-          	infix=="min" and emin (op1, op2, root)
+          	infix=="min" and FNMIN (op1, op2, root)
           	or
-          	infix=="exp" and eexp (op2, root)
+          	infix=="exp" and FNEXP (op2, root)
           	or
-          	infix=="log" and elog (op2, root)
+          	infix=="log" and FNLOG (op2, root)
           	or
-          	infix=="argmin" and eargmin (op2, root)
+          	infix=="argmin" and argmin_constraint (root, op2)
           	or
-          	infix=="partial" and epartial (op1, op2, root)
+          	infix=="partial" and partial_constraint(op1, op2, root)
           	or
-          	infix=="^" and op2==2 and esqu (op1, root)
+          	infix=="^" and op2==2 and SQUARE (op1, root)
           	or
-          	infix=="^" and op2==3 and ecub (op1, root)
+          	infix=="^" and op2==3 and CUBE (op1, root)
           	or
-          	infix=="^" and op2==0.5 and esqr (op1, root)
+          	infix=="^" and op2==0.5 and SQROOT (op1, root)
           	or
           	infix=="^" and error("Only squares, cubes and square roots allowed",PRINTV(op1),PRINTV(op2))
-      r["info"]=infix
-   return r
+      c["info"]=infix
+      table.insert(CONSTRAINTS,c)
+   return root
    end
-return stringtest(expr) and extract_value(expr) and eval(vreader(expr), ensure_symbol("="..table.count(CONNECTORS) + 1))
+return stringtest(expr) and extract_value(expr) and eval(vreader(expr),ensure_symbol("="..table.count(CONNECTORS) + 1))
        or
        stringtest(expr) and ensure_symbol_and_probe(expr)
        or

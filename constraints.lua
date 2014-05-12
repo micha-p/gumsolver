@@ -49,14 +49,14 @@ function constraint (a, b, r, op1, op2)
    local me = {}
    local actors = {a,b,r}
    local function process_new_value ()
-      if TRACE then print ("processing new", a and PRINTX(a.get()), b and PRINTX(b.get()), r and PRINTX(r.get())) end 
+      if TRACE then print2 ("processing new", a and PRINTX(a.get()), b and PRINTX(b.get()), r and PRINTX(r.get())) end 
       if     a.value() and b.value() and not r.value() then r.set(me, op1 (a.get(), b.get())) 
       elseif r.value() and b.value() and not a.value() then a.set(me, op2 (r.get(), b.get())) 
       elseif r.value() and a.value() and not b.value() then b.set(me, op2 (r.get(), a.get())) 
       end
    end
    local function process_forget_value ()
-      if TRACE then print ("processing forget", a, b, r) end 
+      if TRACE then print2 ("processing forget", a, b, r) end 
       r.forget(me)
       a.forget(me)
       b.forget(me)
@@ -139,7 +139,7 @@ function make_connector()
       informant = setter
       for k,v in ipairs (actors) do 
          if v ~= setter then 
-            if TRACE and DEBUG then print ("informs about new value ", v) end
+            if TRACE and DEBUG then print2 ("informs about new value ", v) end
             v.new () 
          end 
       end
@@ -149,12 +149,12 @@ function make_connector()
   end
 
   local forget_my_value = function (retractor)
-    if TRACE then warn ("RECEIVED FORGET from ".. (tabletest(retractor) and retractor["class"] or retractor)) end
+    if TRACE then print2 ("RECEIVED FORGET from ".. (tabletest(retractor) and retractor["class"] or retractor)) end
     if retractor == informant then
        informant = nil
        for k,v in ipairs (actors) do 
           if v ~= retractor then 
-             if TRACE and DEBUG then print (me["class"].." informs about loss ", v) end
+             if TRACE and DEBUG then print2 (me["class"].." informs about loss ", v) end
              v.lost()
           end 
        end
