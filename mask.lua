@@ -73,6 +73,7 @@ end
 function printfullmask()
       io.write ("\27[H\27[J")   -- clear screen
       for line,entry in ipairs(MASKARRAY) do
+         jumptoline(line)
          if CONNECTORS[entry] then 
             printmaskline (entry, CONNECTORS[entry])
          else
@@ -96,6 +97,7 @@ function printmaskline (name, connector)
    if name and MASKTABLE[name] then
       jumptomaskline (name)
       io.write("\27[K")  -- clear line
+      MUTE=nil
       oldprintprobe(name, connector)
       jump_to_left ()
       if DEBUG and CONNECTORS[name] then
@@ -162,6 +164,15 @@ function handleinteraction(line, char,name,connector,x)
       else
          process_line(name.."=1")
       end   
+      do_itertable()
+   elseif char=="/" then    							-- ~8% ~8% ~8% = 95%
+      process_line(name)
+      if x then 
+      	 process_line(name.."="..PRINTX(vamp(x, math.pow (0.95, 1/3))))
+      else
+         process_line(name.."=1")
+      end   
+      do_itertable()
    elseif char=="+" then    							-- ~125% ~125% ~125% = 200%
       process_line(name)
       if x then 
@@ -169,18 +180,33 @@ function handleinteraction(line, char,name,connector,x)
       else
          process_line(name.."=1")
       end   
+      do_itertable()
+   elseif char=="*" then    							-- ~102.5% ~102.5% ~102.5% = 105%
+      process_line(name)
+      if x then 
+	 process_line(name.."="..PRINTX(vamp(x, math.pow (1.05, 1/3))))
+      else
+         process_line(name.."=1")
+      end   
+      do_itertable()
+   elseif char=="\07" then    							-- go
+      do_itertable()
    elseif char=="\03" then    							-- copy
       CLIPBOARD = x
    elseif char=="\24" then    							-- cut
       CLIPBOARD = x
       process_input(name)
+      do_itertable()
    elseif char=="\22" then    							-- paste
       process_line(name)
       process_line(name.."=".. PRINTX(CLIPBOARD))
+      do_itertable()
    elseif char=="\26" then    							-- undo
       if UNDONAME then process_line(UNDONAME.."=".. PRINTX(UNDOVALUE)) end
+      do_itertable()
    elseif char=="\18" then    							-- refresh
       printfullmask()
+      do_itertable()
    else
       io.write ("\a")
    end
@@ -210,7 +236,7 @@ function handlechar(char)
       local line = CURRENTLINE
       local name = MASKARRAY[CURRENTLINE]
       local connector = name and CONNECTORS[name]
-      if connector and (not connector.value() or connector.value()=="user") then
+      if connector then
          local x = get_scaled_val_from_connector(connector)
          handleinteraction(line, char, name, connector,x)
          printmaskline (name, connector)

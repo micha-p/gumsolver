@@ -97,9 +97,7 @@ function parse (str)
             pos = newpos
             return {1, "log", s}
          elseif argmin() then
-            s, newpos = expression (str, pos, len, level+1)
-            pos = newpos
-            return {1, "argmin", s}
+            return dualfunc("argmin")
          elseif min() then
             return dualfunc("min")
          elseif partial() then

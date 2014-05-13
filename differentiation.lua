@@ -43,11 +43,9 @@ function partial_iter (agent, y, x, starty, startx)
       step = DIV(step,NEW(2))	        -- better resolution
       n = n + 1
    end
-   MUTE = nil
    return newy
 end
 
-ITERLOOPP=nil
 
 function chain(a,b)
    local asetter = a.value()
@@ -67,51 +65,53 @@ function chain(a,b)
    end
 end
 
+
+function partial_go(y,x,derivative)
+   local agent="partial_ITER"
+   if x.value() and y.value() then
+      if DEBUG then print2("START DIFF?",y["name"],PRINTX(y.get()), x["name"], PRINTX(x.get()),x.value()) end
+      if (x.value()=="user" or x.value()=="argmin" or x.value()=="partial") then
+         local mutestate = MUTE
+         local tracestate=TRACE
+         local origin = x.value()
+         local startx  = x.get()
+         local starty  = y.get()
+         MUTE = not nil
+         TRACE=nil
+         x.forget (origin)
+         derivative.forget ("partial")
+         assert(not x.value(), "DIFFERENTIATOR: can't release source ("..x["name"]..")")
+         if y.value() then
+            print2("DIFFERENTIATOR: clearing source ("..x["name"]..") doesn't release target ("..y["name"]..")")
+            x.set (origin, startx)
+         else
+            assert(not y.value(), "DIFFERENTIATOR: clearing source ("..x["name"]..") doesn't release target ("..y["name"]..")")
+            local final = partial_iter (agent, y, x, starty, startx)
+            x.set (origin, startx)
+            derivative.set ("partial", final)
+         end
+         TRACE=tracestate
+         MUTE=mutestate
+         ITERLOOPP = nil
+      end
+   end
+end
+
+
+
 function partial_constraint (y,x,derivative)
   local me = {}
   local actors = {x, y, derivative}
-  local agent = "partial"
-
-  local function process_new_value ()
-     if x.value() and y.value() and (not ITERLOOPP) then
-        if DEBUG then print2("START DIFF",PRINTX(y.get()), PRINTX(x.get()),x.value()) end
-        if (x.value()=="user" or x.value()=="argmin") then
-           ITERLOOPP = not nil
-           local mutestate = MUTE
-           local tracestate=TRACE
-           local origin = x.value()
-           local startx  = x.get()
-           local starty  = y.get()
-           MUTE = not nil
-           TRACE=nil
-           x.forget (origin)
-           derivative.forget (agent)
-           assert(not x.value(), "DIFFERENTIATOR: can't release source ("..x["name"]..")")
-           if y.value() then
-              print2("DIFFERENTIATOR: clearing source ("..x["name"]..") doesn't release target ("..y["name"]..")")
-           else
-              assert(not y.value(), "DIFFERENTIATOR: clearing source ("..x["name"]..") doesn't release target ("..y["name"]..")")
-              local final = partial_iter (agent, y, x, starty, startx)
-              x.set (origin, startx)
-              derivative.set (agent, final)
-           end
-           TRACE=tracestate
-           MUTE = mutestate
-           ITERLOOPP = nil
-        end
-     end
+  local function process ()
+    if (not x.value()) or (not y.value()) then derivative.forget("partial") end
   end
-
-  local function process_forget_value ()
-    if (not x.value()) or (not y.value()) then derivative.forget(me) end
-  end
-  
-  me = make_actor (process_new_value, process_forget_value) 
+  me = make_actor (process, process) 
   me["setters"]  = function () return actors end
   me["class"]  = "partial"
   me["iter"]  = nil
   x.connect(me)
   y.connect(me)
+  table.insert(ITERTABLE,{"partial",y["name"],x["name"],derivative["name"],partial_go})
   return me
 end
 

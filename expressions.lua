@@ -8,19 +8,6 @@ CONSTRAINTS={}   		-- hint or number : constraint
 PROBES={}
 
 
-eadd=function(x,y,root) c=SUM   (x,y,root);table.insert(CONSTRAINTS,c);return root end
-esub=function(x,y,root) c=DIFF  (x,y,root);table.insert(CONSTRAINTS,c);return root end
-emul=function(x,y,root) c=PROD  (x,y,root);table.insert(CONSTRAINTS,c);return root end
-ediv=function(x,y,root) c=RATIO (x,y,root);table.insert(CONSTRAINTS,c);return root end
-emin=function(x,y,root) c=FNMIN (x,y,root);table.insert(CONSTRAINTS,c);return root end
-esqu=function(x,  root) c=SQUARE(x,root);  table.insert(CONSTRAINTS,c);return root end
-ecub=function(x,  root) c=CUBE  (x,root);  table.insert(CONSTRAINTS,c);return root end
-esqr=function(x,  root) c=SQROOT(x,root);  table.insert(CONSTRAINTS,c);return root end
-eexp=function(x,  root) c=FNEXP(x,root);   table.insert(CONSTRAINTS,c);return root end
-elog=function(x,  root) c=FNLOG(x,root);   table.insert(CONSTRAINTS,c);return root end
-eval=function(  v,root) c=CONST (root,v);  table.insert(CONSTRAINTS,c);return root end
-eargmin=function(target,root) c=argmin_constraint(root,target); table.insert(CONSTRAINTS,c);return root end
-epartial=function(x,y,root) c=partial_constraint(x,y,root); table.insert(CONSTRAINTS,c);return root end
 
 function run (connector, val , abs , rel) 
    if connector then
@@ -76,7 +63,7 @@ function EVAL(expr, rootconnector)
           	or
           	infix=="log" and FNLOG (op2, root)
           	or
-          	infix=="argmin" and argmin_constraint (root, op2)
+          	infix=="argmin" and argmin_constraint (op1, op2, root)
           	or
           	infix=="partial" and partial_constraint(op1, op2, root)
           	or
@@ -91,11 +78,16 @@ function EVAL(expr, rootconnector)
       table.insert(CONSTRAINTS,c)
    return root
    end
-return stringtest(expr) and extract_value(expr) and eval(vreader(expr),ensure_symbol("="..table.count(CONNECTORS) + 1))
+   local function evalue (root,v) 
+      local c=CONST (root,v);  
+      table.insert(CONSTRAINTS,c);
+   return root 
+   end
+return stringtest(expr) and extract_value(expr) and evalue(ensure_symbol("="..expr.."_"..table.count(CONNECTORS) + 1),vreader(expr))
        or
        stringtest(expr) and ensure_symbol_and_probe(expr)
        or
-       numbertest(expr) and eval (vnew(expr), ensure_symbol("="..table.count(CONNECTORS) + 1))
+       numbertest(expr) and evalue (ensure_symbol("="..expr.."_"..table.count(CONNECTORS) + 1),vnew(expr))
        or
        tabletest(expr)  and expr[2]=="^" and apply (EVAL(expr[1]),expr[2],expr[3]) 
        or

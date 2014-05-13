@@ -47,8 +47,10 @@ function readunit(line)
 end
 
 function printprobe (name, connector)
-   print (PRINT16 (name, connector and connector["unit"] or "", connector and PRINTX (get_scaled_val_from_connector (connector)) or "."))
-   io.flush()
+   if not MUTE then
+      print (PRINT16 (name, connector and connector["unit"] or "", connector and connector.value() and PRINTX (get_scaled_val_from_connector (connector)) or "."))
+      io.flush()
+   end
 end
 
 

@@ -8,7 +8,7 @@ end
 
 function process_table(DELIMITER, filehandle)
    records,header,colnames = csv_read(DELIMITER, filehandle)
-   if DEBUG then 
+   if DEBUG or 1 then 
       io.stderr:write (SCRIPT.." version "..VERSION.. "   TABLE MODE  Separator:")
       io.stderr:write ((DELIMITER == "\t") and "TAB" 
                        or
@@ -16,7 +16,13 @@ function process_table(DELIMITER, filehandle)
                        or
                        DELIMITER) 
       io.stderr:write ("      DEBUGGING TO STDERR\n\n")
+      if MUTE then 
+        io.stderr:write ("      MUTE\n\n")
+      else
+        io.stderr:write ("      NOT MUTE\n\n")
+      end        
    end
+   MUTE=not nil
    for col, colname in ipairs(header) do process_line(colname) end 
    for k,v in ipairs(colnames) do io.write(PRINT16(v),"\t") end
    print()
@@ -32,6 +38,7 @@ function process_table(DELIMITER, filehandle)
       else
          clear_tableline(colnames)
          for colnum, field in ipairs(one_line) do if field~="" then process_line(header[colnum].."="..field) end end
+         do_itertable()
          for k,v in ipairs(colnames) do io.write(PRINT16(PRINTX(get_scaled_val_from_connector(CONNECTORS[v]))).."\t") end
          print()
       end

@@ -115,8 +115,8 @@ end
 function probe (name, connector)
    local me = {}
    local actors = {connector}
-   me = make_actor (function () if not MUTE then printprobe (name, connector) end end, 
-                    function () if not MUTE then printprobe (name, nil) end end,
+   me = make_actor (function () printprobe (name, connector) end, 
+                    function () printprobe (name, nil) end,
                     name)
    me["class"]   = "probe"
    me["name"]    = name
@@ -133,18 +133,21 @@ function make_connector()
   local actors = {}
 
   local set_my_value = function (setter, newval)
-    if TRACE then warn ("RECEIVED " .. PRINTX(newval) .. " from ".. (tabletest(setter) and setter["class"] or setter)) end
+    if TRACE then print2 ("RECEIVED " .. PRINTX(newval) .. " from ".. (tabletest(setter) and setter["class"] or setter)) end
     if (not informant) then 
       val = newval
       informant = setter
       for k,v in ipairs (actors) do 
          if v ~= setter then 
-            if TRACE and DEBUG then print2 ("informs about new value ", v) end
+            if TRACE and DEBUG then print2 ((me["name"] or "").."informs about new value ", v) end
             v.new () 
          end 
       end
     else
-      if not EQUAL (val, newval) then print (PRINT16 ("CONTRADICTION!") , PRINTX(val) , PRINTX (newval), hint) end
+      if not EQUAL (val, newval) then 
+         print (PRINT16 ("CONTRADICTION!") , PRINTX(val) , PRINTX (newval), hint) 
+         print2 (PRINT16 ("CONTRADICTION!") , PRINTX(val) , PRINTX (newval), hint) 
+      end
     end
   end
 

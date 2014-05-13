@@ -17,6 +17,58 @@ The optimizer is triggered by a start value. See below for details.
 
 
 LIMIT   = 500
+ITERTABLE={}
+
+function argmin_go (target, trigger, a)
+   local agent = "argmin_ITER"
+   if a.value() and (a.value() == "argmin") then
+      a.forget("argmin")
+   end
+   if a.value() and (a.value() == "user") then
+      a.forget("user")
+   end
+   if trigger.value() and (not target.value()) then
+      if DEBUG then print2(" Try to start argmin just with TRIGGER value") end
+      local startx  = trigger.get()
+      if DEBUG then print2("SET:", a["name"], PRINTX(startx)) end
+      a.set (agent, startx)
+      if DEBUG then print2("SET:", a["name"], PRINTX(a.get())) end
+      local starty  = target.get()
+      if not starty then 
+         print2("OPTIMIZER: "..a["name"].. " won't fill target: "..target["name"])
+         return
+      end
+      do_process(agent, a, target, startx, starty)
+   elseif trigger.value() and target.value() and target.value=="user" then
+      local startx  = trigger.get()
+      local starty  = target.get()
+      target.forget("user")
+      do_process(agent, a, target, startx, starty)
+   end
+end
+
+
+function do_itertable()
+  function do_process(agent, a, target, startx, starty)
+           local mutestate = MUTE
+           local tracestate=TRACE
+           MUTE = not nil
+           TRACE=nil
+           a.forget(agent)
+           assert(not a.value(), "OPTIMIZER: can't release source: "..a["name"])
+           assert(not target.value(), "OPTIMIZER: target not released: "..target["name"])
+           local final = argmin_iter (agent, a, target, startx, starty)
+           a.set ("argmin", final)
+           assert(final==a.get(), "OPTIMIZER: can't set final")
+           TRACE=tracestate
+           MUTE = mutestate
+   end
+   for name,c in ipairs(ITERTABLE) do
+      if DEBUG then print2("GO:",c[1],c[2],c[3],c[4]) end
+      local func = c[5]
+      func(CONNECTORS[c[2]],CONNECTORS[c[3]],CONNECTORS[c[4]])
+   end
+end
 
 function argmin_iter (agent, x, y, startx, starty)
    
@@ -28,7 +80,7 @@ function argmin_iter (agent, x, y, startx, starty)
    local dleft, dright = epsilon, epsilon   
    
    if ITER or DEBUG then
-      print2("ARGMIN:", PRINT16(x["name"] or ""),"\t\t",PRINT16(y["name"] or "")) 
+      print2("ARGMIN:", PRINT16(x["name"] or ""),"\t",PRINT16(y["name"] or "")) 
    end
    
    if ITER then print2(n, PRINT16(xcache),PRINT16(step),PRINT16(ycache),"\t\t",PRINT16(dleft),PRINT16(dright)) end 
@@ -81,48 +133,26 @@ function argmin_iter (agent, x, y, startx, starty)
       print2(n, PRINT16(xcache),PRINT16(step),PRINT16(ycache),"\t\t",PRINT16(dleft),PRINT16(dright))
    end
 
-   MUTE = nil
    return xcache
 end
 
-ITERLOOP=nil
-
-function argmin_constraint (a, target)  -- two connectors as pipe-constraint
+function argmin_constraint (target, trigger, a)
   local me = {}
-  local actors = {a, target}
-  local agent = "argmin_ITER"
-
-  local function process_new_value ()
-    if (not ITERLOOP) and target.value() and (a.value()=="user" or a.value()=="argmin") then
-        ITERLOOP = not nil
-       local mutestate = MUTE
-       local tracestate=TRACE
-       local origin = a.value()
-       local startx  = a.get()
-       local starty  = target.get()
-       MUTE = not nil
-       TRACE=nil
-       a.forget (origin)
-       assert(not a.value(), "OPTIMIZER: can't release source")
-       assert(not target.value(), "OPTIMIZER: can't release target")
-       local final = argmin_iter (agent, a, target, startx, starty)
-       TRACE=tracestate
-       MUTE = mutestate
-       a.set ("argmin", final)
-       assert(final==a.get(), "OPTIMIZER: can't set final")
-       -- a.connect(me)   		-- this triggers another iteration
-       ITERLOOP = nil
-    end
+  local actors = {a, trigger, target}
+  local function process ()
+     if (not trigger.value()) then 
+           if DEBUG then print2(" Forget argmin") end
+          a.forget("argmin")
+     end
   end
-  local function process_forget_value()
-    if not target.value() then a.forget("argmin") end
-  end
-  me = make_actor (process_new_value, process_forget_value) 
+  me = make_actor (process, process) 
   me["setters"]  = function () return actors end
   me["class"]  = "argmin"
-  me["iter"]  = nil
+  me["free"]  = 1
   a.connect(me)
+  trigger.connect(me)
   target.connect(me)
+  table.insert(ITERTABLE,{"argmin",target["name"],trigger["name"],a["name"],argmin_go})
   return me
 end
 
