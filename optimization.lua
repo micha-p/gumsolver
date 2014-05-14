@@ -19,7 +19,7 @@ The optimizer is triggered by a start value. See below for details.
 LIMIT   = 500
 ITERTABLE={}
 
-function argmin_go (target, trigger, a)
+function argmin_go (target, a, trigger)
    local agent = "argmin_ITER"
    if a.value() and (a.value() == "argmin") then
       a.forget("argmin")
@@ -30,12 +30,13 @@ function argmin_go (target, trigger, a)
    if trigger.value() and (not target.value()) then
       if DEBUG then print2(" Try to start argmin just with TRIGGER value") end
       local startx  = trigger.get()
-      if DEBUG then print2("SET:", a["name"], PRINTX(startx)) end
+      if DEBUG then print2("SET:", a["name"], PRINTX(a.get())) end
       a.set (agent, startx)
       if DEBUG then print2("SET:", a["name"], PRINTX(a.get())) end
       local starty  = target.get()
       if not starty then 
          print2("OPTIMIZER: "..a["name"].. " won't fill target: "..target["name"])
+         a.forget(agent)
          return
       end
       do_process(agent, a, target, startx, starty)
@@ -136,23 +137,23 @@ function argmin_iter (agent, x, y, startx, starty)
    return xcache
 end
 
-function argmin_constraint (target, trigger, a)
+function argmin_constraint (target, a, trigger)
   local me = {}
   local actors = {a, trigger, target}
-  local function process ()
+  local function process_forget ()
      if (not trigger.value()) then 
            if DEBUG then print2(" Forget argmin") end
           a.forget("argmin")
      end
   end
-  me = make_actor (process, process) 
+  me = make_actor (function () end, process_forget) 
   me["setters"]  = function () return actors end
   me["class"]  = "argmin"
   me["free"]  = 1
   a.connect(me)
   trigger.connect(me)
   target.connect(me)
-  table.insert(ITERTABLE,{"argmin",target["name"],trigger["name"],a["name"],argmin_go})
+  table.insert(ITERTABLE,{"argmin",target["name"],a["name"],trigger["name"],argmin_go})
   return me
 end
 

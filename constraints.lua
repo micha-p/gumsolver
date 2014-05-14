@@ -145,8 +145,8 @@ function make_connector()
       end
     else
       if not EQUAL (val, newval) then 
-         print (PRINT16 ("CONTRADICTION!") , PRINTX(val) , PRINTX (newval), hint) 
-         print2 (PRINT16 ("CONTRADICTION!") , PRINTX(val) , PRINTX (newval), hint) 
+         print (PRINT16 ("CONTRADICTION!") , PRINT16(me.name or ""), PRINTX(val) , PRINTX (newval), hint) 
+         print2 (PRINT16 ("CONTRADICTION!") , PRINT16(me.name or ""), PRINTX(val) , PRINTX (newval), hint) 
       end
     end
   end

@@ -63,7 +63,7 @@ function EVAL(expr, rootconnector)
           	or
           	infix=="log" and FNLOG (op2, root)
           	or
-          	infix=="argmin" and argmin_constraint (op1, op2, root)
+          	infix=="argmin" and argmin_constraint (op1, root, op2)
           	or
           	infix=="partial" and partial_constraint(op1, op2, root)
           	or

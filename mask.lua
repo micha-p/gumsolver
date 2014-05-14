@@ -2,8 +2,8 @@ CLIPBOARD=nil
 UNDONAME=nil
 UNDOVALUE=nil
 VALUECOLUMN=33
-MASKTABLE={}  -- lookup table to get linenumber from connector name
-MASKARRAY={}  -- ipairs of line and connectornames or remarks
+MASKARRAY={}	-- ordered ipairs of content lines (connectornames or remarks)
+MASKLOOKUP={}	-- hash table to get linenumber from connector name
 CURRENTLINE=0
 
 
@@ -50,25 +50,41 @@ end
 
 
 function jumptomaskline(name)
-   local line = MASKTABLE[name]
+   local line = MASKLOOKUP[name]
    if line then 
       jumptoline(line)
    ---else
       --table.insert(MASKARRAY,name)
-      --MASKTABLE[name] = #MASKARRAY
+      --MASKLOOKUP[name] = #MASKARRAY
       --jumptoend()
    end
 end
 
 function reservemaskline(name)
-   local line = MASKTABLE[name]
+   local line = MASKLOOKUP[name]
    if not line then 
       table.insert(MASKARRAY,name)
-      MASKTABLE[name] = #MASKARRAY 
+      MASKLOOKUP[name] = #MASKARRAY 
       if DEBUG then print2("reserved maskline", name, #MASKARRAY) end
    end
    printmaskline (name, CONNECTORS[name])
 end
+
+function clearmaskline(name)
+   local line = MASKLOOKUP[name]
+   if line then 
+      table.remove(MASKARRAY,line)
+      if DEBUG then print2("cleared maskline", name, line) end
+   elseif numbertest(name) and name<=#MASKARRAY then
+      if DEBUG then print2("cleared maskline #"..name, MASKARRAY[name]) end
+      table.remove(MASKARRAY,name)
+   end
+   MASKLOOKUP = {}
+   for n,key in ipairs(MASKARRAY) do MASKLOOKUP[key]=n end
+   print(write(MASKARRAY))
+   printfullmask()
+end
+
 
 function printfullmask()
       io.write ("\27[H\27[J")   -- clear screen
@@ -87,6 +103,7 @@ end
 function printmaskremarkline (string)
    table.insert(MASKARRAY,string)
    jumptoend ()
+   if DEBUG then print2("reserved maskline", string, #MASKARRAY) end
    io.write("\27[K") -- clear to end of line
    io.write(string)
    jump_to_left ()
@@ -94,7 +111,7 @@ return not nil
 end
 
 function printmaskline (name, connector)
-   if name and MASKTABLE[name] then
+   if name and MASKLOOKUP[name] then
       jumptomaskline (name)
       io.write("\27[K")  -- clear line
       MUTE=nil
@@ -123,6 +140,7 @@ end
 
 function process_eventloop()
    local char = ""
+   do_itertable()
    while char do 
       char = handlechar(getchar())
       jumptoline(CURRENTLINE)
@@ -164,7 +182,6 @@ function handleinteraction(line, char,name,connector,x)
       else
          process_line(name.."=1")
       end   
-      do_itertable()
    elseif char=="/" then    							-- ~8% ~8% ~8% = 95%
       process_line(name)
       if x then 
@@ -172,7 +189,6 @@ function handleinteraction(line, char,name,connector,x)
       else
          process_line(name.."=1")
       end   
-      do_itertable()
    elseif char=="+" then    							-- ~125% ~125% ~125% = 200%
       process_line(name)
       if x then 
@@ -180,7 +196,6 @@ function handleinteraction(line, char,name,connector,x)
       else
          process_line(name.."=1")
       end   
-      do_itertable()
    elseif char=="*" then    							-- ~102.5% ~102.5% ~102.5% = 105%
       process_line(name)
       if x then 
@@ -188,7 +203,6 @@ function handleinteraction(line, char,name,connector,x)
       else
          process_line(name.."=1")
       end   
-      do_itertable()
    elseif char=="\07" then    							-- go
       do_itertable()
    elseif char=="\03" then    							-- copy
@@ -196,20 +210,17 @@ function handleinteraction(line, char,name,connector,x)
    elseif char=="\24" then    							-- cut
       CLIPBOARD = x
       process_input(name)
-      do_itertable()
    elseif char=="\22" then    							-- paste
       process_line(name)
       process_line(name.."=".. PRINTX(CLIPBOARD))
-      do_itertable()
    elseif char=="\26" then    							-- undo
       if UNDONAME then process_line(UNDONAME.."=".. PRINTX(UNDOVALUE)) end
-      do_itertable()
    elseif char=="\18" then    							-- refresh
       printfullmask()
-      do_itertable()
    else
       io.write ("\a")
-   end
+   end   
+   do_itertable()
 end
 
 
@@ -218,12 +229,13 @@ function handlechar(char)
       local nextchar=io.read(1)
       if nextchar =="[" then
          local command = io.read(1)
-         if command=="A" then jumpup()   end 
-         if command=="B" then jumpdown() end
+         if command=="A" then 		jumpup() 
+         elseif command=="B" then 	jumpdown() 
+         end
       elseif nextchar =="O" then
          local command = io.read(1)
-         if     command=="H" then jumptoline(1)
-         elseif command=="F" then jumptoend() 
+         if     command=="H" then 	jumptoline(1)
+         elseif command=="F" then 	jumptoend() 
          end
       else
          warn ("Unknown escape sequence:"..nextchar.."="..string.byte(nextchar))
