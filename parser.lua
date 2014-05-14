@@ -58,6 +58,7 @@ function parse (str)
       function closing()   return check_pattern ("%)") end  
       function value()     return check_pattern (VALUEPATTERN) or check_pattern (VALUEPATTERNISO) end  
       function operator()  return check_pattern ("[%+%-%*%/%^]") end  
+      function diff()      return check_pattern ("exp ?%(") end  
       function exp()       return check_pattern ("exp ?%(") end  
       function log()       return check_pattern ("log ?%(") or check_pattern ("ln ?%(") end 
       function min()       return check_pattern ("min ?%(") end 
@@ -96,6 +97,10 @@ function parse (str)
             s, newpos = expression (str, pos, len, level+1)
             pos = newpos
             return {1, "log", s}
+         elseif diff() then
+            s, newpos = expression (str, pos, len, level+1)
+            pos = newpos
+            return {1, "diff", s}
          elseif argmin() then
             return dualfunc("argmin")
          elseif min() then

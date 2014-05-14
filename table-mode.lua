@@ -7,8 +7,9 @@ end
 
 
 function process_table(DELIMITER, filehandle)
+   local records,header,colnames, quit
    records,header,colnames = csv_read(DELIMITER, filehandle)
-   if DEBUG or 1 then 
+   if DEBUG then 
       io.stderr:write (SCRIPT.." version "..VERSION.. "   TABLE MODE  Separator:")
       io.stderr:write ((DELIMITER == "\t") and "TAB" 
                        or
@@ -16,31 +17,27 @@ function process_table(DELIMITER, filehandle)
                        or
                        DELIMITER) 
       io.stderr:write ("      DEBUGGING TO STDERR\n\n")
-      if MUTE then 
-        io.stderr:write ("      MUTE\n\n")
-      else
-        io.stderr:write ("      NOT MUTE\n\n")
-      end        
    end
-   MUTE=not nil
    for col, colname in ipairs(header) do process_line(colname) end 
    for k,v in ipairs(colnames) do io.write(PRINT16(v),"\t") end
    print()
-   for k,v in ipairs(colnames) do io.write(PRINT16(CONNECTORS[v]["unit"] or ""),"\t") end
+    for k,v in ipairs(colnames) do io.write(PRINT16(CONNECTORS[v] and CONNECTORS[v]["unit"] or ""),"\t") end
    print()
    for linenumber, one_line in ipairs(records) do 
-      if stringtest(one_line) and one_line:find("^#[A-Z]") then
-         if one_line:find("^#Q") then
-            break
-         else
-            process_directive(one_line)
-         end
-      else
+         if quit then break end
          clear_tableline(colnames)
-         for colnum, field in ipairs(one_line) do if field~="" then process_line(header[colnum].."="..field) end end
+         for colnum, field in ipairs(one_line) do 
+            if field:find("^#Q") then
+               quit=not nil
+               break
+            elseif field:find("^#[A-Z]") then
+               process_directive(field)
+            elseif field~="" then 
+               process_line(header[colnum].."="..field) 
+            end
+         end
          do_itertable()
-         for k,v in ipairs(colnames) do io.write(PRINT16(PRINTX(get_scaled_val_from_connector(CONNECTORS[v]))).."\t") end
+         for k,v in ipairs(colnames) do io.write(PRINT16(PRINTX(CONNECTORS[v] and get_scaled_val_from_connector(CONNECTORS[v]))).."\t") end
          print()
-      end
    end
 end

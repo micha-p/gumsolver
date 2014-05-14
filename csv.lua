@@ -11,9 +11,7 @@ function csv_read(separator,filehandle)
    for k,v in ipairs(rheader) do header[k]= string.find(v,"=") and string.match(v,"%s*(.+)%s*=") or v end
    for line in io.lines() do
       local fields={}
-      if line:find("^#[A-Z]") then
-         table.insert(rtable,line)           		-- return line string instead of table of fields
-      elseif not line:find("^# ") then			-- skip comments
+      if not line:find("^# ") then			-- skip comments
          for i,field in ipairs(csv_process_line(line, sep)) do
        	    if i > #header then
       	       error ("To many input fields, check line endings!")

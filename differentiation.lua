@@ -4,16 +4,13 @@
 LIMIT   = 500
 
 function partial_iter (agent, y, x, starty, startx)
-   
    local n = 0
-   local epsilon = AMP (starty,0.00001)
+   local epsilon = AMP (starty,0.000001)
    local step 	 = AMP (startx,0.1)
    local oldy, newy
-   
    if ITER or DEBUG then
       print2("PARTIAL", PRINT16("d "..y["name"]),PRINT16("d "..x["name"]))
    end
-   
    function calculate (agent, y, x)
       local xleft, xright, yleft, yright, dx, dy
       x.forget(agent)   
@@ -32,6 +29,9 @@ function partial_iter (agent, y, x, starty, startx)
          print2(n,PRINT16(dy),PRINT16(dx),PRINT16(dydx),PRINT16(epsilon),PRINT16(yleft),PRINT16(yright),PRINT16(xleft),PRINT16(xright))
       end
       return dydx
+   end
+   if DEBUG then
+      print2(n,PRINT16(dy),PRINT16(dx),PRINT16(dydx),PRINT16(epsilon),PRINT16(yleft),PRINT16(yright),PRINT16(xleft),PRINT16(xright))
    end
    
    newy=starty

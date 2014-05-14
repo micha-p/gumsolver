@@ -108,7 +108,7 @@ function process_line (input)
          if not MUTE then print(num) end
       elseif extract_value(input) then 				  		-- value +- uncertainty
          local val = vreader(input)
-         if DEBUG then print2(warn(PRINT16(val))) end
+         if DEBUG then print2(PRINT16(val)) end
          if not MUTE then print (PRINTX(val)) end
       elseif unit then
          local c = ensure_symbol_and_probe (name, ensure_symbol(name))		-- name [unit]
@@ -157,7 +157,7 @@ function process_directive(line)
    local rest = line:match("^#[A-Z]+%s+(.*)$")
    local out  = line:match("^#PR?I?N?T? (.*)$")
    return 
-      line:find("^#P") and (TABLE or RECORD) and  warn (out or "")
+      line:find("^#P") and (TABLE or RECORD) and  print2(out or "")
       or
       line:find("^#P") and MASK and printmaskremarkline (out or "")
       or
