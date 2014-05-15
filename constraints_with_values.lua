@@ -21,7 +21,8 @@ EXP = vexp
 LOG = vlog
 MIN = vmin
 MAX = vmax
-LIM = vlim
+LIM1 = vlim1
+LIM2 = vlim2
 ABS = vabs
 
 -- GLOBALS

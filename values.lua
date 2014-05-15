@@ -32,7 +32,8 @@ function vexp (a)       return vnew  (math.exp(a.v), a.D2 and a.D2^0.5 * math.ex
 function vlog (a)       return vnew  (math.log(a.v), a.D2 and a.D2^0.5 / a.v) end           	-- absolute error divided
 function vmin (a, b)    return (a.v < b.v) and a or b end
 function vmax (a, b)    return (a.v > b.v) and a or b end
-function vlim (r, x)    if (r.v>x.v) then print ("EXCEEDING MINIMUM!", r.abs() , x.abs()) else return r end end
+function vlim1 (m, x)   if (x.v < m.v) then print (x.abs(), "LOWER THAN MINIMUM!", m.abs()) else return m end end
+function vlim2 (m, x)   if (x.v > m.v) then print (x.abs(), "EXCEEDING MAXIMUM!", m.abs()) else return m end end
 
 
 function vreader (str)
@@ -109,11 +110,14 @@ print(a.abs(), a.rel(), s.abs(), s.rel())
 --[[
 A = vnew(3,1)
 B = vnew(2,0.5)
-M = vmin(A,B)
-print(M.abs())
-L = vlim(M,B)
+Mn = vmin(A,B)
+print(Mn.abs())
+Mx = vmax(A,B)
+print(Mx.abs())
+
+L = vlim1(Mn,B)
 print(L.abs())
-M = vnew(100)
-L = vlim(M,A)
+Mn = vnew(100)
+L = vlim1(Mn,A)
 print(L.abs())
 --]]
