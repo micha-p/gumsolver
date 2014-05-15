@@ -7,6 +7,7 @@
 
 package.path = package.path .. ";include/?.lua"
 require 'display'
+require 'stderr'
 require 'tables'
 
 
@@ -21,7 +22,9 @@ MUL = function(a,b) return a*b  end
 DIV = function(a,b) return a/b  end
 AMP = function(a,b) return a*b  end
 MIN = function(a,b) return math.min(a,b) end
-LIM = function(r,x) if (r>x) then print (PRINT16 ("EXCEEDING LIMIT!") , PRINTX (r) , PRINTX (x)) else return r end end
+MAX = function(a,b) return math.max(a,b) end
+LIM1 = function(r,x) if (r>x) then print (PRINT16 ("EXCEEDING LIMIT!") , PRINTX (r) , PRINTX (x)) else return r end end
+LIM2 = function(r,x) if (r<x) then print (PRINT16 ("EXCEEDING LIMIT!") , PRINTX (r) , PRINTX (x)) else return r end end
 SQU = function(a)   return a^2  end
 RT2 = function(a)   return a^.5 end
 RET = function(a)   return a    end
@@ -210,11 +213,12 @@ function PROD  (x,y,p) return constraint(x, y, p, MUL, DIV); end
 function RATIO (x,y,r) return PROD (y,r,x) end
 function CONST (x,v)   return constant (x, v) end
 function SQUARE(x,y)   return pipe   (x,y, SQU, RT2) end
-function CUBE(x,y)     return pipe   (x,y, CUB, RT3) end
+function CUBE  (x,y)   return pipe   (x,y, CUB, RT3) end
 function SQROOT(x,y)   return SQUARE (y,x)  end
 function FNEXP (x,y)   return pipe   (x,y, EXP, LOG) end
 function FNLOG (x,y)   return pipe   (x,y, LOG, EXP) end
-function FNMIN (x,y,m) return constraint(x, y, m, MIN, LIM); end
+function FNMIN (x,y,m) return constraint(x, y, m, MIN, LIM1); end
+function FNMAX (x,y,m) return constraint(x, y, m, MAX, LIM2); end
 
 --[[
 C = make_connector()

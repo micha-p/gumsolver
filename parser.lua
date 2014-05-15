@@ -39,11 +39,13 @@ end
 
 function parse (str) 
    
+   local s, newpos, pos
+
    local function expression (str, pos, len, level)
       local e={}
       local i=1
       
-      function check_pattern (pattern)
+      local function check_pattern (pattern)
          if pos > len then 
             return nil
          else
@@ -53,30 +55,33 @@ function parse (str)
          end
       end
 
-      function skipspace() return check_pattern ("%s*") end
-      function opening()   return check_pattern ("%(") end  
-      function closing()   return check_pattern ("%)") end  
-      function value()     return check_pattern (VALUEPATTERN) or check_pattern (VALUEPATTERNISO) end  
-      function operator()  return check_pattern ("[%+%-%*%/%^]") end  
-      function diff()      return check_pattern ("exp ?%(") end  
-      function exp()       return check_pattern ("exp ?%(") end  
-      function log()       return check_pattern ("log ?%(") or check_pattern ("ln ?%(") end 
-      function min()       return check_pattern ("min ?%(") end 
-      function partial()   return check_pattern ("partial ?%(") end 
-      function argmin()    return check_pattern ("argmin ?%(") end 
-      function variable()  return check_pattern (NAMEPATTERN) end  
-      function number()    return extract_number( check_pattern (NUMBERPATTERN)) end 
-      function operand()   return func() or variable() or value() or number() or subexpression() or nil end
-      
-      function subexpression()
+      local func
+      local function opening()   return check_pattern ("%(") end  
+      local function closing()   return check_pattern ("%)") end  
+      local function subexpression()
          if opening() then 
             s, newpos = expression (str, pos, len, level+1)
             pos = newpos
          end
          return s
       end
+      local functio
+      local function skipspace() return check_pattern ("%s*") end
+      local function value()     return check_pattern (VALUEPATTERN) or check_pattern (VALUEPATTERNISO) end  
+      local function operator()  return check_pattern ("[%+%-%*%/%^]") end  
+      local function diff()      return check_pattern ("diff ?%(") end  
+      local function exp()       return check_pattern ("exp ?%(") end  
+      local function log()       return check_pattern ("log ?%(") or check_pattern ("ln ?%(") end 
+      local function min()       return check_pattern ("min ?%(") end 
+      local function max()       return check_pattern ("max ?%(") end 
+      local function partial()   return check_pattern ("partial ?%(") end 
+      local function argmin()    return check_pattern ("argmin ?%(") end 
+      local function variable()  return check_pattern (NAMEPATTERN) end  
+      local function number()    return extract_number( check_pattern (NUMBERPATTERN)) end 
+      local function operand()   return func() or variable() or value() or number() or subexpression() or nil end
+      
    
-      function dualfunc (string)
+      local function dualfunc (string)
          skipspace()
          local a = operand()
          skipspace()
@@ -88,7 +93,7 @@ function parse (str)
          return {a, string, b}
       end
 
-      function func()
+      func = function ()
          if exp() then
             s, newpos = expression (str, pos, len, level+1)
             pos = newpos
@@ -105,6 +110,8 @@ function parse (str)
             return dualfunc("argmin")
          elseif min() then
             return dualfunc("min")
+         elseif max() then
+            return dualfunc("max")
          elseif partial() then
             return dualfunc("partial")
          end

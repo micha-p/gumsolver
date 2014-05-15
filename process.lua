@@ -60,6 +60,7 @@ function process_line (input)
             if DEBUG then print2(PRINT16(name), "=\t", right) end
          elseif  string.find (right, EXPRPATTERN) then				-- name = expression
             local expr=extract_expr(right)
+            if DEBUG then print2(PRINT16(name), "=\t", expr) end
             if DEBUG then print2(PRINT16(name), "=\t", pretty(unpack(order(parse(expr))))) end
             DEFINITIONS[name]=expr
             EVAL(order(parse(expr)), ensure_symbol_and_probe (name))

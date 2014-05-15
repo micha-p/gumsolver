@@ -31,6 +31,7 @@ function vrt3 (a)       return vnew  (a.v ^ 1/3,  nil, a.d2 and a.d2^0.5 / 3) en
 function vexp (a)       return vnew  (math.exp(a.v), a.D2 and a.D2^0.5 * math.exp(a.v)) end	-- absolute error multiplied
 function vlog (a)       return vnew  (math.log(a.v), a.D2 and a.D2^0.5 / a.v) end           	-- absolute error divided
 function vmin (a, b)    return (a.v < b.v) and a or b end
+function vmax (a, b)    return (a.v > b.v) and a or b end
 function vlim (r, x)    if (r.v>x.v) then print ("EXCEEDING MINIMUM!", r.abs() , x.abs()) else return r end end
 
 

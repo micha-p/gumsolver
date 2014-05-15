@@ -59,11 +59,15 @@ function EVAL(expr, rootconnector)
           	or
           	infix=="min" and FNMIN (op1, op2, root)
           	or
+          	infix=="max" and FNMAX (op1, op2, root)
+          	or
           	infix=="exp" and FNEXP (op2, root)
           	or
           	infix=="log" and FNLOG (op2, root)
           	or
-          	infix=="argmin" and argmin_constraint (op1, root, op2)
+          	infix=="diff" and diff_constraint (op2, root)
+          	or
+          	infix=="argmin" and argmin_constraint (op1, op2, root)
           	or
           	infix=="partial" and partial_constraint(op1, op2, root)
           	or

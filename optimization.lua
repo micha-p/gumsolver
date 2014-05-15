@@ -16,40 +16,32 @@ The optimizer is triggered by a start value. See below for details.
 
 
 
-LIMIT   = 500
+LIMIT   = 1000
 ITERTABLE={}
+INSIDE_ITERATION=nil
 
-function argmin_go (target, a, trigger)
-   local agent = "argmin_ITER"
-   if a.value() and (a.value() == "argmin") then
-      a.forget("argmin")
-   end
-   if a.value() and (a.value() == "user") then
-      a.forget("user")
-   end
-   if trigger.value() and (not target.value()) then
-      if DEBUG then print2(" Try to start argmin just with TRIGGER value") end
-      local startx  = trigger.get()
-      if DEBUG then print2("SET:", a["name"], PRINTX(a.get())) end
-      a.set (agent, startx)
-      if DEBUG then print2("SET:", a["name"], PRINTX(a.get())) end
-      local starty  = target.get()
-      if not starty then 
-         print2("OPTIMIZER: "..a["name"].. " won't fill target: "..target["name"])
-         a.forget(agent)
-         return
+function do_itertable()
+   for name,c in ipairs(ITERTABLE) do
+      local r = nil
+      local agent = c[1]
+      if DEBUG then print2("GO:",agent,c[2],c[3],c[4]) end
+      local func = c[5]
+      local rcon = CONNECTORS[c[4]]
+
+      INSIDE_ITERATION=not nil
+      r=func(CONNECTORS[c[2]],CONNECTORS[c[3]],rcon)
+      INSIDE_ITERATION=nil
+
+      if r then 
+         rcon.set(agent,r) 
+         if DEBUG then print2("GO E:",agent,c[2],c[3],c[4],PRINT16(r)) end
       end
-      do_process(agent, a, target, startx, starty)
-   elseif trigger.value() and target.value() and target.value=="user" then
-      local startx  = trigger.get()
-      local starty  = target.get()
-      target.forget("user")
-      do_process(agent, a, target, startx, starty)
    end
 end
 
-
-function do_itertable()
+function argmin_go (target, trigger, a)
+  print2("ARGMIN GO!",target.name,trigger.name,a.name)
+  local f
   function do_process(agent, a, target, startx, starty)
            local mutestate = MUTE
            local tracestate=TRACE
@@ -58,26 +50,51 @@ function do_itertable()
            a.forget(agent)
            assert(not a.value(), "OPTIMIZER: can't release source: "..a["name"])
            assert(not target.value(), "OPTIMIZER: target not released: "..target["name"])
-           local final = argmin_iter (agent, a, target, startx, starty)
-           a.set ("argmin", final)
-           assert(final==a.get(), "OPTIMIZER: can't set final")
+           local final = argmin_iter (agent, target, a, startx, starty)
            TRACE=tracestate
            MUTE = mutestate
+           print2("ARGMIN ITER result:",a.name,PRINTX(final))
+   return final
    end
-   for name,c in ipairs(ITERTABLE) do
-      if DEBUG then print2("GO:",c[1],c[2],c[3],c[4]) end
-      local func = c[5]
-      func(CONNECTORS[c[2]],CONNECTORS[c[3]],CONNECTORS[c[4]])
+   local agent = "argmin_ITER"
+   if a.value() and (a.value() == "argmin") then
+      a.forget("argmin")
    end
+   if a.value() and (a.value() == "user") then
+      a.forget("user")
+   end
+   if trigger.value() and (not target.value()) then
+      if DEBUG then print2(" Try to start argmin just with TRIGGER value",trigger.name,PRINT16(trigger.get())) end
+      local startx  = trigger.get()
+      if DEBUG then print2("SET:", a["name"], PRINTX(a.get())) end
+      a.set (agent, startx)
+      if DEBUG then print2("SET:", a["name"], PRINTX(a.get())) end
+      local starty  = target.get()
+      if not starty then 
+         print2("OPTIMIZER: "..a.name.. " won't fill target: "..target.name)
+         a.forget(agent)
+         return
+      end
+      f=do_process(agent, a, target, startx, starty)
+   elseif trigger.value() and target.value() and target.value=="user" then
+      if DEBUG then print2(" Try to start argmin with TRIGGER value and TARGET USER VALUE") end
+      local startx  = trigger.get()
+      local starty  = target.get()
+      target.forget("user")
+      f=do_process(agent, a, target, startx, starty)
+   end
+   print2("ARGMIN ITER result2:",a.name,PRINTX(f))
+return f
 end
 
-function argmin_iter (agent, x, y, startx, starty)
+
+function argmin_iter (agent, y, x, startx, starty)
    
    local n = 0
    local xcache = startx
    local ycache = starty
    local epsilon = AMP (starty,0.0001)
-   local step 	 = AMP (startx,0.1)
+   local step 	 = AMP (startx,0.05)
    local dleft, dright = epsilon, epsilon   
    
    if ITER or DEBUG then
@@ -137,7 +154,7 @@ function argmin_iter (agent, x, y, startx, starty)
    return xcache
 end
 
-function argmin_constraint (target, a, trigger)
+function argmin_constraint (target, trigger, a)
   local me = {}
   local actors = {a, trigger, target}
   local function process_forget ()
@@ -153,7 +170,7 @@ function argmin_constraint (target, a, trigger)
   a.connect(me)
   trigger.connect(me)
   target.connect(me)
-  table.insert(ITERTABLE,{"argmin",target["name"],a["name"],trigger["name"],argmin_go})
+  table.insert(ITERTABLE,{"argmin",target.name,trigger.name,a.name,argmin_go})
   return me
 end
 

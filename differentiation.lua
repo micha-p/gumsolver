@@ -6,7 +6,7 @@ LIMIT   = 500
 function partial_iter (agent, y, x, starty, startx)
    local n = 0
    local epsilon = AMP (starty,0.000001)
-   local step 	 = AMP (startx,0.1)
+   local step 	 = AMP (startx,0.05)
    local oldy, newy
    if ITER or DEBUG then
       print2("PARTIAL", PRINT16("d "..y["name"]),PRINT16("d "..x["name"]))
@@ -68,6 +68,7 @@ end
 
 function partial_go(y,x,derivative)
    local agent="partial_ITER"
+   local final
    if x.value() and y.value() then
       if DEBUG then print2("START DIFF?",y["name"],PRINTX(y.get()), x["name"], PRINTX(x.get()),x.value()) end
       if (x.value()=="user" or x.value()=="argmin" or x.value()=="partial") then
@@ -86,15 +87,14 @@ function partial_go(y,x,derivative)
             x.set (origin, startx)
          else
             assert(not y.value(), "DIFFERENTIATOR: clearing source ("..x["name"]..") doesn't release target ("..y["name"]..")")
-            local final = partial_iter (agent, y, x, starty, startx)
+            final = partial_iter (agent, y, x, starty, startx)
             x.set (origin, startx)
-            derivative.set ("partial", final)
          end
          TRACE=tracestate
          MUTE=mutestate
-         ITERLOOPP = nil
       end
    end
+return final
 end
 
 

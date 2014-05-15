@@ -17,6 +17,7 @@ require 'mask'				-- overwrite printprobe
 require 'trace'
 require 'optimization'
 require 'differentiation'
+require 'diff'
 
 
 

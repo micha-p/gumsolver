@@ -20,6 +20,7 @@ RT3 = vrt3
 EXP = vexp
 LOG = vlog
 MIN = vmin
+MAX = vmax
 LIM = vlim
 ABS = vabs
 
