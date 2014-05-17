@@ -39,6 +39,11 @@ end
 
 SCALE={}
 
+function get_scaled_val_from_connector (connector)
+   local scale = connector["scale"] or 1
+return connector.value() and vamp(connector.get(), 1/scale) or nil
+end
+
 function readunit(line)
    unit = line:match("%s*("..UNITPATTERN..").*")
    scale= line:match("%s*"..UNITPATTERN.."%s+([%d.]+).*")
@@ -47,15 +52,15 @@ function readunit(line)
 end
 
 function printprobe (name, connector)
-   if not MUTE then
-      print (PRINT16 (name, connector and connector["unit"] or "", connector and connector.value() and PRINTX (get_scaled_val_from_connector (connector)) or "."))
-      io.flush()
+   local function printmessage (name, connector, message)
+   return PRINT16 (name, 
+                   connector and connector["unit"] or "", 
+                   connector and connector.value() and PRINTX (get_scaled_val_from_connector (connector)) or ".",
+                   message)
    end
+   if not MUTE then print (printmessage (name, connector)) end
+   io.flush()
+   if message then print2 (printmessage (name, connector)) end
 end
 
-
-function get_scaled_val_from_connector (connector)
-   local scale = connector["scale"] or 1
-return connector.value() and vamp(connector.get(), 1/scale) or nil
-end
 

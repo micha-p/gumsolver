@@ -1,3 +1,4 @@
+-- object structure:
 -- estimate, square of absolute uncertainty, square of relative uncertainty
 
 function vfast (v, squared_abs_error, squared_rel_error)

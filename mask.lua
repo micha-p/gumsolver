@@ -117,7 +117,7 @@ function printmaskline (name, connector)
       MUTE=nil
       oldprintprobe(name, connector)
       jump_to_left ()
-      if DEBUG and CONNECTORS[name] then
+      if CONNECTORS[name] then
          jumptomaskline (name)
          local c= CONNECTORS[name]
          local s= c.value()

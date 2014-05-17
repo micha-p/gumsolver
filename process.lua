@@ -145,6 +145,10 @@ function process_directive(line)
       RELATIVE=v
       return not nil
    end
+   local function setheader (v)
+      NOHEADER=not nil
+      return not nil
+   end
    local function trace(num)
       TRACE=num and (num==1) or not TRACE
       return not nil
@@ -171,6 +175,8 @@ function process_directive(line)
       line:find("^#O") and record_connectors()
       or
       line:find("^#RECO?R?D?") and record_connectors()
+      or
+      line:find("^#NOHEADER") and setheader(nil)
       or
       line:find("^#R") and setrelative(not nil)
       or

@@ -19,10 +19,12 @@ function process_table(DELIMITER, filehandle)
       io.stderr:write ("      DEBUGGING TO STDERR\n\n")
    end
    for col, colname in ipairs(header) do process_line(colname) end 
-   for k,v in ipairs(colnames) do io.write(PRINT16(v),"\t") end
-   print()
-    for k,v in ipairs(colnames) do io.write(PRINT16(CONNECTORS[v] and CONNECTORS[v]["unit"] or ""),"\t") end
-   print()
+   if not NOHEADER then 
+      for k,v in ipairs(colnames) do io.write(PRINT16(v),"\t") end
+      print()
+      for k,v in ipairs(colnames) do io.write(PRINT16(CONNECTORS[v] and CONNECTORS[v]["unit"] or ""),"\t") end
+      print()
+   end
    for linenumber, one_line in ipairs(records) do 
          if quit then break end
          clear_tableline(colnames)

@@ -12,12 +12,11 @@ So far, the list of commands is NOT stable but constantly modificated according 
 
 ## Theory
 
-There are two main types of objects: Connectors keep the values, a list of listeners and basically understand two signals for setting their values. Whenever they get such a signal from any informant, they inform all listeners except the informer whether they got a new value or they lost their value.
+There are two main types of objects: Connectors keep the values, take care of a list of listeners and basically understand two signals for changing their values: Setting and forgetting. Whenever they get such a signal from any informant, they inform all listeners except the informer whether they got a new value or they lost their value.
 
-Constraints understand these changes, ask for values, compute new ones, and propagate them to all other attached connectors. Probes are derived from constraints and just communicate with the user. 
+Constraints are listening to them, understand their messages, eventually ask for their values, compute new ones, and propagate them to all other attached connectors. Probes are a special kind of listeners, derived from constraints and just communicate with the user. 
 
-Such constraints are given as arithmetic terms building a network of equations. The right part of any given equation is parsed into smaller expressions, which are converted to a connector attached to a constraint, which in turn is attaches itself to it's operands (other connectors or constants) during creation. 
-
+Networks of constraints and linked connectors are specified as arithmetic terms and equations.
 
 ## Example Usage
 
@@ -29,40 +28,55 @@ cat demo/tableformula.txt | ./gumsolver -d "\t" -t
 ./gumsolver -d , -t -q -f demo/tableformula.csv  
 rlwrap ./gumsolver -I
 
-## Modes of operation and their output 
-
-TODO: Consistant naming on command line and in directives
-
-As default, gumsolver works in a *pipe* mode, accepting input from standard input and sending the evaluated results to standard output. Several other modes affect input as well as output and might be suitably combined. 
-
-When any input files are given as argument, the program will evaluate these files subsequently until an explicit or implicit end of file is encountered within these files. After processing all arguments, the program will wait for additional input, if it works in an *interactive* mode, and terminate otherwise. Such interactions can be made either in *prompt* mode, which might be supported by a readline wrapper, or in *mask* mode, where output will update a nonscrolling table.
-
-Input can be supplied line by line, either in a stream, from a file or at the command line prompt. In addition there is a *table* mode, where input might be given as lines of records. Finally, output can be switched to *record* mode as well, so it is possible to obtain an updated version of a table with missing cells. 
-
-These normal modes of operation can be complemented by additional information on the standard error port. In *debug* mode, where all input is further explained and in *trace* mode, where all changes in state are encountered.
-
-
-## Command line and arguments
-
-TODO: Consistant naming on command line and in directives
-
-Arguments given on the command line are evaluated strictly from left to right and it is possible to use switches and file input multiple times. Options and directives are as close as possible to the same directives except for the leading character (TODO) and the additional options for showing help and version.
-
-Switches affecting the kind of output of uncertainties: ABSOLUTE(default) RELATIVE SUPPRESS   
-Switches affecting the kind of output and mode of operation: STDIN(default) TABLE MASK PROMPT QUIT  
-Switches affecting the amount of output: VERBOSE(default) MUTE(implied by TABLE and MASK)   
-Switches affecting additional information on stderr: DEBUG ITER TRACE   
-Commands for printing one block of output: RECORD HELP VERSION  
-Commands for printing one block of output on stderr: DUMP  
-
-## Commands for interactions and pipelined files
+## Elementary commands for interactions and pipelined files
 
 	a=12      Assign value
 	a=12+-3   Assign value with uncertainty
 	a=12+-3%  Assign value with uncertainty (percentage of value)
 	a         Forget value
 	a=b*c     Submit equation
-	c?	  Try to get value by actively searching for satisfied equations (TODO)
+	c?	       Try to get value by actively searching for satisfied equations (TODO)
+
+## Modes of operation and output 
+
+As default, gumsolver works in a *batch* mode, accepting input from standard input and sending the evaluated results to standard output. When any input files are given as argument, the program will evaluate these files subsequently until an explicit or implicit end of file is encountered within these files. After processing all arguments, the program will wait for additional interactions or terminate otherwise. 
+
+Such interactions can be made either in *prompt* mode, which might be supported by a readline wrapper, or in *mask* mode, where output will update a nonscrolling table.
+
+Input can be supplied line by line, either in a stream, from a file or at the command line prompt. In addition there is a *table* mode, where input might be given as lines of records. Finally, output can be switched to *record* mode as well, so it is possible to obtain an updated version of a table with missing cells. 
+
+These normal modes of operation can be complemented by additional information on the standard error port. In *debug* mode, where all input is further explained and in *trace* mode, where all changes in state are encountered.
+
+1. Pipelining:    BATCH (default)
+2. Interactive:   PROMPT (sequential lines) MASK (vertical view)
+3. Tabular:       TABLE (horiontal records) RECORD (vertical records)
+4. Error port:    DEBUG (feedback to stderr) ITER (show iterations) TRACE (messages)
+5. Terminating:   QUIT (default) DUMP (show internal states)
+
+## Command line and arguments (STILL SOME WORK TODO)
+
+### Global flags and special commandline options (TODO fix demo files)
+
+Global flags override all other directives within files and at the command line and should be placed at the beginning. Useful for quickly changing output without any changes at other places.
+
+-q quiet and restricted output
+-s suppress display of errors completely
+-a absolute error for all output
+-r relative error for all output
+-z unspecified error is displayed as zero
+-d delimiter for tabular input
+-i stay interactive and don't terminate automatically
+-p prompt for input
+-m always stay in mask mode 
+-f read file line by line in batch mode or interactive mode
+-t read table with separated fields
+-v display version and terminate
+-h display help and terminate
+
+
+### Directives on the commandline
+
+Directives given on the command line are evaluated strictly from left to right and it is possible to use switches and file input multiple times. They are started with one or two leading dashes instead of a hash sign to prevent any interference with the shell. A comprehensive list is given below. 
 
 ## Domain specific language
 
@@ -71,7 +85,7 @@ Commands for printing one block of output on stderr: DUMP
 Notation should rather reflect math instead of code.  
 No syntactic sugar.  
 Commands to the underlying framework should be clearly distinct.  
-Characterset within ASCII and some optional additions (for +- and ^2).  
+Characterset within ASCII and very few optional additions (for +- and ^2).  
 All statements are evaluated sequentially.
 
 ### Syntax
@@ -93,15 +107,18 @@ Operators:
 Order of precedence is as usual and might be modified by brackets
 
 Special functions (one optional space between name and bracket):  
+abs(TODO)
 exp(x), e^x    
 log(x), ln(x)   as in Lua, there is only natural logarithm (easy to remember)
-min(a,b)   
-argmin(y)  the result is avalue, which minimizes y
+min(a,b) max(a,b)  
+argmin(y, trigger)  the result is a value, which minimizes y
 partial(y,x)   partial derivative of y regarding x
 integral(y,x1,x2) TODO 
 
 Equations:  
 a=b+c &emsp; a=b\*c &emsp; a=b\*(c-d) &emsp; ...
+b+c = e\*f &emsp; a^2=b\*(c-d) &emsp; ...
+a*x^2 + b*x + c = 0
 
 Functions(TODO):  
 f(x) = 2 * x + 1
@@ -120,30 +137,22 @@ t [h] = 3 => this input value is in [h] irrespective of any other declared unit
 
 TODO: 
 At the moment, declarations of units have to be started with the directive #UNIT. Input values with units are not possible so far. But scaled input of course.
-Further: So far, units are stored in special objects, but they might be implemented as connectors as well. 
-
-
-### Special commands and commandline arguments
-
-It is possible to submit special directives following a hash sign at the beginning of the line. 
-In most cases, the first letter is distinctive and sufficient. Compare commandline options
-
-	#(A)BSOLUTE  	Switch to display absolute uncertainties (default)
-	#(R)ELATIVE  	Switch to display relative uncertainties
-	#(I)NCLUDE   	Literal inclusion of specified file given by following characters
-	#(P)RINT	Send the rest of the line to standard output
-	#(D)UMP 	Show network of constraints
-	#(T)ABLE     	Tabulate records (horizontally)
-	#REC(O)RD	Print, save and clear current state of connectors 
-	#TRACE   	Toggle tracing on/ off
-	#(V)ERBOSE  	show messages on changes of variables
-	#(M)UTE		no messages on changes of variables
-	#(H)ELP	   	Show help
-	#(Q)UIT	   	Stop processing regardless of any following content
 
 ### Comments 
 
 Comments might start anywhere in a line with a hash-sign followed by any letter not used for directives and last until end of line.
+
+### Directives on the command line and in files
+
+It is possible to submit special directives following a hash sign at the beginning of a line. They are uppercase an their meaning and coverage is exactly the same in the command line options as in files. In most cases, the first letter is distinctive and sufficient.
+
+Kind of output of uncertainties: #ABSOLUTE(default) #RELATIVE #ZERO #SUPPRESS   
+Kind of output and mode of operation: #BATCH(default) #PROMPT #MASK #TABLE #RECORD   
+Amount of output: #VERBOSE(default) #MUTE(implied by #TABLE and #MASK)   
+Additional information on stderr: #DEBUG #ITER #TRACE   
+Way of terminating:  #QUIT (default) #DUMP (show list of network and internal state)   
+Additional in- and output: #INCLUDE (lieral inclusion of a file) #PRINT (message line) 
+
 	
 ## Fields and Records in horizontal and vertical modes
 
@@ -151,19 +160,13 @@ Input is divided into records separated as fields. It might be provided vertical
 
 The current state of connectors might be recorded either by explicitely starting a new record or at any line ending in table mode. Fields within table records might be interpreted as statements with predefined left side. Moreover, full statements are not restricted to the header line but might occur within the table as well. On the other hand in vertical modes several statements might be combined at one line when separated by field delimiters (TODO). 
 
-Backreferences to previous records are a powerful feature for studying simulations. They consist of a symbol name and an index, denoted by an at_sign followed by a valid record number. 
+Backreferences to previous records are a powerful feature for studying simulations. They consist of a symbol name and an index, denoted by an at_sign followed by a valid record number. (TODO: drop again, too much code and too complicated)
 
-## Present Limitations
+## Present Limitations and Future Improvements
 
-Constant values within formulas are fixed without any uncertainties. Otherwise use variables.  
-s=a*a will not resolve into all directions, the reason is given as an excercise.
-
-## Future Improvements
-
-Consistent use of global variables in code.  
-Formal description of the grammar, as well as a clean parser instead of nested regular expressions.  
-Encapsulation of constraints into functions (in a mathematical sense).  
-Tablemode considering columns as arrays of values.  
+Equations with multiple occurrences of variables (s=a*a) will not resolve into both directions, the reason is given as an excercise.   
+Encapsulation of constraints into modules to circumvent such problems.   
+Formal description of the grammar combined with a perfectly clean parser.   
 Compute means and uncertainties of a range of records or all records (star) or a SQL-like query. 
 
 

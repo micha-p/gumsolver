@@ -40,7 +40,6 @@ function do_itertable()
 end
 
 function argmin_go (target, trigger, a)
-  print2("ARGMIN GO!",target.name,trigger.name,a.name)
   local f
   function do_process(agent, a, target, startx, starty)
            local mutestate = MUTE
@@ -53,7 +52,6 @@ function argmin_go (target, trigger, a)
            local final = argmin_iter (agent, target, a, startx, starty)
            TRACE=tracestate
            MUTE = mutestate
-           print2("ARGMIN ITER result:",a.name,PRINTX(final))
    return final
    end
    local agent = "argmin_ITER"
@@ -83,7 +81,6 @@ function argmin_go (target, trigger, a)
       target.forget("user")
       f=do_process(agent, a, target, startx, starty)
    end
-   print2("ARGMIN ITER result2:",a.name,PRINTX(f))
 return f
 end
 

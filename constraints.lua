@@ -109,8 +109,11 @@ return me
 end
 
 
-function printprobe (name, connector)
-   print (PRINT16 (name), PRINT16 (connector and PRINTX (connector.get()) or "."))
+function printprobe (name, connector, message)
+   print (PRINT16 (name), PRINT16 (connector and PRINTX (connector.get()) or "."), message)
+   if message then 
+      print2 (PRINT16 (name), PRINT16 (connector and PRINTX (connector.get()) or "."), message)
+   end
    io.flush()
 end
 
@@ -146,11 +149,8 @@ function make_connector()
             v.new () 
          end 
       end
-    else
-      if not EQUAL (val, newval) then 
-         print (PRINT16 ("CONTRADICTION!") , PRINT16(me.name or ""), PRINTX(val) , PRINTX (newval), hint) 
-         print2 (PRINT16 ("CONTRADICTION!") , PRINT16(me.name or ""), PRINTX(val) , PRINTX (newval), hint) 
-      end
+    elseif not EQUAL (val, newval) then 
+       printprobe (name, connector, "CONTRADICTION! "..PRINTX (newval))
     end
   end
 
@@ -172,10 +172,6 @@ function make_connector()
     if informant then constraint.new() end
   end
 
-  local disconnect_actor = function (constraint)
-     table.remove (actors, assert(table.find (actors, constraint), "Can't disconnect"))
-  end
-
   me["class"]  = "connector"
   me.listeners  = function () return actors end
   me.value 	= function () return informant end
@@ -183,8 +179,6 @@ function make_connector()
   me.set    	= function (actor, new) set_my_value     (actor, new) end
   me.forget 	= function (actor)      forget_my_value  (actor)      end
   me.connect	= function (actor)      connect_actor    (actor)      end
-  me.disconnect	= function (actor)      disconnect_actor (actor)      end
-
   return me
 end
 

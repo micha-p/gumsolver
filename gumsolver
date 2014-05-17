@@ -1,5 +1,8 @@
 #! /usr/bin/lua
 
+-- TODO:
+-- connector.value() does not need to be a function call. Replace by connector.informant
+
 package.path = package.path .. ";include/?.lua"
 require 'display'
 require 'stderr'
@@ -119,6 +122,7 @@ while arg and arg[1] do
    DEBUG    = DEBUG    or arg[1]=="-DEBUG"   and not DEBUG
    TABLE    = TABLE    or arg[1]=="-TABLE"   and not TABLE
    TABLE    = TABLE    or arg[1]=="-t"       and not TABLE
+   NOHEADER = NOHEADER or arg[1]=="-NOHEADER"
    MASK     = MASK     or arg[1]=="-MASK"    and not MASK
    RECORD   = RECORD   or arg[1]=="-R"       and not RECORD
    MUTE     = MUTE     and not (arg[1]=="-VERBOSE")
