@@ -20,13 +20,12 @@ Networks of constraints and linked connectors are specified as arithmetic terms 
 
 ## Example Usage
 
-./gumsolver -h  
-cat demo/example.txt | ./gumsolver  
-cat demo/tableformula.txt | ./gumsolver -d "\t" -t  
-./gumsolver -f demo/example.txt  
-./gumsolver -t -q -f demo/tableformula.txt  
-./gumsolver -d , -t -q -f demo/tableformula.csv  
-rlwrap ./gumsolver -I
+./gumsolver -i demo/example.txt  
+./gumsolver -q -t -i demo/tableformula.txt  
+./gumsolver -d, -t -i demo/tableformula.csv  
+cat demo/example.txt | ./gumsolver -b   
+cat demo/tableformula.csv | ./gumsolver -b -TABLE   
+rlwrap ./gumsolver
 
 ## Elementary commands for interactions and pipelined files
 
@@ -50,28 +49,30 @@ These normal modes of operation can be complemented by additional information on
 1. Pipelining:    BATCH (default)
 2. Interactive:   PROMPT (sequential lines) MASK (vertical view)
 3. Tabular:       TABLE (horiontal records) RECORD (vertical records)
-4. Error port:    DEBUG (feedback to stderr) ITER (show iterations) TRACE (messages)
+4. Error port:    DEBUG (feedback to stderr) ITER (show iterations) TRACE (messages) SUPPRESS
 5. Terminating:   QUIT (default) DUMP (show internal states)
 
 ## Command line and arguments (STILL SOME WORK TODO)
 
-### Global flags and special commandline options (TODO fix demo files)
+### Global flags and short commandline options
 
 Global flags override all other directives within files and at the command line and should be placed at the beginning. Useful for quickly changing output without any changes at other places.
 
--q quiet and restricted output
--s suppress display of errors completely
--a absolute error for all output
--r relative error for all output
--z unspecified error is displayed as zero
--d delimiter for tabular input
--i stay interactive and don't terminate automatically
--p prompt for input
--m always stay in mask mode 
--f read file line by line in batch mode or interactive mode
--t read table with separated fields
--v display version and terminate
--h display help and terminate
+-a absolute error for all output (default and higher precedence)  
+-r relative error for all output  
+-s short number format with errors suppressed completely  
+-z unspecified error is displayed as zero  
+-b full number format (irrespective of shown errors)
+
+-b batch mode (noninteractive)
+-m always stay in mask mode   
+-i read file line by line in batch mode or interactive mode  
+-t read table with separated fields  
+-d delimiter for tabular input  
+
+-q quiet and restricted output  
+-v display version and terminate  
+-h display help and terminate  
 
 
 ### Directives on the commandline

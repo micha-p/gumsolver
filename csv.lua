@@ -4,11 +4,9 @@
 function csv_read(separator,filehandle)
    local sep = separator or ","
    io.input(filehandle)
-   local rheader=csv_process_line(io.read(), sep)
    local rtable={}
    local header={}
 
-   for k,v in ipairs(rheader) do header[k]= string.find(v,"=") and string.match(v,"%s*(.+)%s*=") or v end
    for line in io.lines() do
       local fields={}
       if not line:find("^# ") then			-- skip comments
@@ -22,12 +20,13 @@ function csv_read(separator,filehandle)
          table.insert(rtable,fields)
        end
     end
-    return rtable,rheader,header
+    return rtable
 end
 
 
 function csv_process_line (str, sep)
-      str = str .. sep
+   if str then 
+      str = str.. sep
       local t = {}
       local pos = 1
       local last = str:len()
@@ -44,7 +43,10 @@ function csv_process_line (str, sep)
           pos = ending + 1
         end
       until pos > last
-return t
+      return t
+   else
+      return {}
+   end
 end
 
 

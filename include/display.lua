@@ -114,7 +114,7 @@ function write(t, ...)
       or
       t and "not nil" -- PRAGMA
       or
-      error ("Dont know how to pretty print")
+      error ("Dont know how to machine print")
    end
    return #arg > 0 and write1(t).."\t"..write(unpack(arg))
           or

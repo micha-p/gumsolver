@@ -1,14 +1,20 @@
 #! /usr/bin/lua
 
 -- TODO:
--- connector.value() does not need to be a function call. Replace by connector.informant
+-- use stringbuffers and table.concat for collecting output
+-- remove the need for a itertable which was just a neccessary quick hack. 
+-- redo RECORD MODE: 
+-- it is table shown as a non interactive mask
+-- shown fields from table-columns
+-- when TABLE==not nil and MASK==not nil
 
 package.path = package.path .. ";include/?.lua"
 require 'display'
 require 'stderr'
+require 'options'
 require 'table'
 
-require 'constraints_with_values'   	-- PRINTX redefined
+require 'constraints_with_values'   	-- PRINTX redefined, 
 require 'expressions'			-- global CONNECTORS
 require 'units'   			-- overwrite: PRINT16, printprobe
 require 'process'
@@ -16,82 +22,92 @@ require 'csv'
 require 'table-mode'
 require 'dump'
 require 'records'
-require 'mask'				-- overwrite printprobe
+require 'mask'				-- printprobe -> oldprintprobe
 require 'trace'
 require 'optimization'
 require 'differentiation'
 require 'diff'
 
+HELP={	"gumsolver -- resolving equations by propagation of uncertainties",
+  	"usage:    gumsolver [options]",
+	"options:  -a        absolute error for all output (default and higher precedence)",
+	"          -r        relative error for all output",
+
+	"          -s        short number format with errors suppressed completely",
+	"          -z        unspecified error is displayed as zero",
+	"          -f        full number format (irrespective of shown errors)",
+
+	"          -b        batch mode (noninteractive)",
+	"          -m 	     mask mode", 
+	"          -t        table mode",
+	"          -i file   include file line by line in batch mode or interactive mode",
+	"          -d        delimiter for tabular input is specified in next char",
+
+	"          -q        quiet and restricted output",
+	"          -v        display version and terminate",
+	"          -h        display help and terminate"}
 
 
-VERSION = "0.4.0"
-SCRIPT=arg and string.match(arg[0],"[^%w%-]*([%w%-]*)$")
-TABLE=nil 
-PROMPT=nil
-MUTE=nil
-RELATIVE=nil
-DELIMITER="\t"
-RECORD=nil
-BEST=not nil
-ERRORS=not nil
-MASK=nil
-INFILE=nil
-RECORDS={}			-- number : record
-DEFINITIONS={}			-- number : string
-COLNAMES={}			-- number : string
+-- GLOBALS
+VERSION    	= "0.5.0"
+SCRIPT      	= arg and string.match(arg[0],"[^%w%-]*([%w%-]*)$")
+RECORDS     	={}	-- integer , record
+DEFINITIONS	={}	-- integer , string
+COLNAMES    	={}	-- integer , string
+GLOBALS 	= collect_short_options(arg)
 
-TRACE=nil
-DEBUG=nil
-ITER=nil
+-- MODES
+BATCH	= string.find(GLOBALS,"b")
+MASK	= string.find(GLOBALS,"m")
+TABLE	= string.find(GLOBALS,"t")
+RECORD 	= MASK and TABLE
 
--- TODO consistant upper and lower case letters for modes
+-- STDERR FLAGS
+DEBUG 	= nil
+TRACE 	= nil
+ITER 	= nil
+DUMP	= nil
 
-help={}
-help[ 1]="gumsolver -- resolving equations by propagation of uncertainties"
-help[ 2]="usage:    gumsolver [options]"
-help[ 3]="options:  -h             show help and terminate"
-help[ 4]="          -v		   show version and terminate"
-help[ 5]="          -d delimiter   field separator for input"
-help[ 6]="          -a             display absolute uncertainties (default)"
-help[ 7]="          -r             display relative uncertainties"
-help[ 8]="          -DEBUG         debug messages to stderr (toggle)"
-help[ 9]="          -TRACE         trace signals to stderr (toggle)"
-help[10]="          -ITER          print iterations to stderr (toggle)"
-help[11]="          -R             Restrict output to records"
-help[12]="          -I             interactive (readline wrapper suggested)"
-help[13]="          -J             interactive (nonscrolling mask)"
-help[14]="          -Q             stop working and exit"
-help[15]="          -VERSION       display version"
-help[16]="          -q             restrict standard output to special commands"
-help[17]="          -f file        use file for input"
-help[18]="          -t		   table mode (toggle)"
-help[19]="          -BEST	   numbers rounded for best visibility (default)"
-help[20]="          -FULL	   numbers not rounded"
-help[21]="          -ERRORS	   print errors if present (default)"
-help[22]="          -SUPPRESS	   suppress errors"  -- TODO adjust behaviour of DEMOfiles
+-- GLOBAL OUTPUT FLAGS
+MUTE	= string.find(GLOBALS,"q") or string.find(GLOBALS,"m")
+RELATIVE= string.find(GLOBALS,"r")
+RELATIVE= not string.find(GLOBALS,"a")
+ZERO 	= string.find(GLOBALS,"z")
+SHORT	= string.find(GLOBALS,"s")
+BEST 	= not string.find(GLOBALS,"f")
 
-
-function process_include(f)
-   if DEBUG then warn("INCLUDE\t",f,"\n") end
-return process_file(f)
+dpos=string.find(GLOBALS,"d")
+if dpos then 
+   DELIMITER=string.sub(GLOBALS,dpos+1,dpos+1)
+else
+   DELIMITER="\t"
 end
 
-function process_file(f, toplevel)
+if string.find(GLOBALS,"h") then 
+   for k,v in ipairs (HELP) do print(v) end; os.exit(); return      
+end
+
+if string.find(GLOBALS,"v") then 
+   if string.find(GLOBALS,"t") then 
+      print (SCRIPT, VERSION," ", "TABLE MODE", "Delimiter:"..	((DELIMITER == "\t") and "TAB" 
+                       					   	or
+                       					   	(DELIMITER == " ") and "SPACE"
+                       					   	or
+                       					   	DELIMITER))
+   else
+      print (SCRIPT,VERSION)
+   end
+   os.exit()
+end
+
+function process_file(f)
    local temp = io.input()
    local filehandle = assert(io.open(f))
    if TABLE then
       process_table(DELIMITER, filehandle)
    else
       for line in io.input(filehandle):lines() do 
-         if line:find("^#Q") then 
-            if toplevel then 
-               print(); os.exit()
-            else
-               break
-           end
-         else
-            process_input (line)
-         end
+         if not process_inputline (line) then break end
       end
    end
    io.close(filehandle)
@@ -100,94 +116,61 @@ return not nil
 end
 
 
-function process_stdin()
-   while true do
-      if PROMPT then io.write(PROMPT) end 
-      local line = io.read()
-      if line==NIL or line:find("^#Q") then break end
-      process_input (line)
-   end
-   print()
-return not nil
-end
 
+function process_flags(a)
+   BATCH    = BATCH    or a:find("^BA?T?C?H?")
+   MASK     = MASK     or a:find("^MA?S?K?")
+   TABLE    = TABLE    or a:find("^TAB?L?E?")
+   RECORD   = MASK and TABLE
+
+   DEBUG    = DEBUG    and not a:find("^SU?P?P?R?E?S?S?") or a:find("^DEB?U?G?")  and not DEBUG
+   TRACE    = TRACE    and not a:find("^SU?P?P?R?E?S?S?") or a:find("^TRA?C?E?")   and not TRACE
+   ITER     = ITER     and not a:find("^SU?P?P?R?E?S?S?") or a:find("^IT?E?R?")    and not ITER
+   DUMP     = DUMP     or a:find("^DUM?P?")
+
+   MUTE     = MUTE     and not a:find("^VERBO?S?E?")
+   MUTE     = MUTE     or a:find("^TA?B?L?E?") and not MUTE
+   MUTE     = MUTE     or a:find("^t")     and not MUTE
+   MUTE     = MUTE     or a:find("^MUTE")  and not MUTE
+   MUTE     = MUTE     or a:find("^q")     and not MUTE
+   BEST     = BEST     or a:find("^BE?S?T?")
+   BEST     = BEST     and not a:find("^FU?L?L?")
+   RELATIVE = RELATIVE or a:find("^RE?L?A?T?I?V?E?") or a:find("^r") or a:find("^a") and nil
+   return not (DUMP or a:find("^QU?I?T?")) 
+end
 
 -- START
 
 
-while arg and arg[1] do
-
-   TRACE    = TRACE    or arg[1]=="-TRACE"   and not TRACE
-   ITER     = ITER     or arg[1]=="-ITER"    and not ITER
-   DEBUG    = DEBUG    or arg[1]=="-DEBUG"   and not DEBUG
-   TABLE    = TABLE    or arg[1]=="-TABLE"   and not TABLE
-   TABLE    = TABLE    or arg[1]=="-t"       and not TABLE
-   NOHEADER = NOHEADER or arg[1]=="-NOHEADER"
-   MASK     = MASK     or arg[1]=="-MASK"    and not MASK
-   RECORD   = RECORD   or arg[1]=="-R"       and not RECORD
-   MUTE     = MUTE     and not (arg[1]=="-VERBOSE")
-   MUTE     = MUTE     or (arg[1]=="-TABLE") and not MUTE
-   MUTE     = MUTE     or (arg[1]=="-t")     and not MUTE
-   MUTE     = MUTE     or (arg[1]=="-MUTE")  and not MUTE
-   MUTE     = MUTE     or (arg[1]=="-q")     and not MUTE
-   BEST     = BEST     or (arg[1]=="-BEST")
-   BEST     = BEST     and not (arg[1]=="-FULL")
-   ERRORS   = ERRORS   or arg[1]=="-ERRORS"
-   ERRORS   = ERRORS   and not (arg[1]=="-SUPPRESS") 
-   RELATIVE = RELATIVE or arg[1]=="-r" or arg[1]=="-a" and nil
-   
-   if arg[1]=="-I" then 
-      TABLE=nil
+continue=not nil
+while continue and arg and arg[1] do
+   local a = get_next_option(arg)
+   if a:find("^IN?C?L?U?D?E?") or a:find("^i") then 
       table.remove(arg,1)
-      if INFILE then print() end
-      print (SCRIPT.." version "..VERSION)
-      PROMPT="> "
-      process_stdin()
-   end
-   if arg[1]=="-J" then 
-      table.remove(arg,1)
-      MASK = not nil
-      TABLE=nil
-      MUTE=nil
-      PROMPT="> "
-      printfullmask()
-      process_eventloop()
-      MASK = nil
-   end
-   if arg[1]=="-f" then 
-      table.remove(arg,1)
-      INFILE = not nil
+      if DEBUG then print2("INCLUDE ",arg[1]) end
       if MASK then io.write ("\27[H\27[J") end   -- clear screen
-      process_file(arg[1], nil)
-   end
-   if arg[1]=="-d" then 
-      table.remove(arg,1)
-      DELIMITER = ( arg[1]=="\\t" and "\t" or arg[1])
-   end
-   if arg[1]=="-h" then 
-      for k,v in ipairs (help) do print(v) end; return      
-   end
-   if arg[1]=="-v" then 
-      print ("version "..VERSION); return     
-   end
-   if arg[1]=="-Q" then 
-      print (); os.exit(); return     
+      continue=process_file(arg[1])
+   else
+      continue = process_flags(a)
    end
    table.remove(arg,1)
 end
 
 if MASK then
-   process_eventloop("\13") 		--< from stdin
-else
-   if not PROMPT and not INFILE then
-      if TABLE then
-         process_table(DELIMITER)   	--< from stdin
-      else
-         process_stdin()
-      end
+   process_eventloop("\13") 					--< from stdin
+elseif TABLE then
+   process_table(DELIMITER)   					--< from stdin
+elseif not string.find(GLOBALS,"i") then
+   while true do
+      if not BATCH then io.write("> ") end 
+      local line = io.read()  					--< from stdin
+      if line==NIL or not process_inputline (line) then break end
    end
 end
 
+print()
+if DUMP then dump_connectors() end
+if DUMP and DEBUG then dump_probes_and_constraints() end
 
 
 --[[

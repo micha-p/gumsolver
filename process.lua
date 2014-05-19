@@ -1,15 +1,19 @@
-function process_input(line)
+function process_inputline(line)
       if line:find("^#[A-Z]") then
-         process_directive(line)
+         return process_directive(line:match("^#(.*)$"))
+      elseif line:find("#") then
+         return process_inputline(line:match("^([^#]*)#.*$"))  	-- ignore comments
+      elseif line:find (";%s*$") then
+         return process_inputline(line:match("^([^;]*);%s*$"))  	-- ignore closing semicolon
       else
-         -- first remove comments
-         -- then leading and trailing whitespace as well as closing semicolon
-         process_line(string.match(line:match("^([^#]*)#?.*$"), "^%s*(.*)%s*;?$"))
+         process_contentline(line:match("^%s*(.*)%s*$")) 	-- remove leading and trailing whitespace
+         return not nil
       end
 end
 
+
     
-function process_line (input)   
+function process_contentline (input)   
    if not input or input=="" then return end
    if string.find (input, "=") then
       local left=extract_left(input)
@@ -140,59 +144,30 @@ function process_line (input)
    end
 end
 
+
 function process_directive(line)
-   local function setrelative (v)
-      RELATIVE=v
+   local cmd  = line:match("^([A-Z]+)")
+   local arg  = line:match("^[A-Z]+%s+([%S]+)")
+   local rest = line:match("^[A-Z]+%s+(.*)$")
+   process_flags(cmd)
+   
+   if line:find("^Q") or line:find("^DUM?P?") then
+      return nil
+   elseif line:find("^P") then
+      return (TABLE or RECORD) and print2(rest or "")
+             or
+             MASK and printmaskremarkline (rest or "")
+             or
+             (print (rest or "") or not nil)
+   elseif line:find("^U") then 
+      readunit (rest)
       return not nil
+   elseif line:find("^I") then 
+      if DEBUG then print2("INCLUDE\t",f,"\n") end
+      return process_file(f)
+   else
+      process_flags(cmd)
    end
-   local function setheader (v)
-      NOHEADER=not nil
-      return not nil
-   end
-   local function trace(num)
-      TRACE=num and (num==1) or not TRACE
-      return not nil
-   end
-   local function verbosity(num)
-      DEBUG = num and (num==2) or nil
-      MUTE = num and (num==0) or nil
-      return not nil
-   end
-   local arg  = line:match("^#[A-Z]+%s+([%S]+)")
-   local rest = line:match("^#[A-Z]+%s+(.*)$")
-   local out  = line:match("^#PR?I?N?T? (.*)$")
-   return 
-      line:find("^#P") and (TABLE or RECORD) and  print2(out or "")
-      or
-      line:find("^#P") and MASK and printmaskremarkline (out or "")
-      or
-      line:find("^#P") and (print (out or "") or not nil)
-      or
-      line:find("^#U") and (readunit (rest) or not nil)
-      or
-      line:find("^#I") and process_include(arg)
-      or
-      line:find("^#O") and record_connectors()
-      or
-      line:find("^#RECO?R?D?") and record_connectors()
-      or
-      line:find("^#NOHEADER") and setheader(nil)
-      or
-      line:find("^#R") and setrelative(not nil)
-      or
-      line:find("^#A") and setrelative (nil)
-      or
-      line:find("^#TRA?C?E?") and trace(tonumber(line:match("^#TRA?C?E?%s+([%S]+)")))
-      or
-      line:find("^#VE?R?B?O?S?I?T?Y?") and verbosity(tonumber(line:match("^#VE?R?B?O?S?I?T?Y?%s+([%S]+)")))
-      or
-      line:find("^#DEBUG") and verbosity(2)
-      or
-      line:find("^#T") and ((arg and tabulate_selected(rest)) or tabulate_record())
-      or
-      line:find("^#D") and (dump_connectors() or (DEBUG and dump_probes_and_constraints()) or not nil)
-      or
-      error ("Unknown directive in line: " .. line)
 end
 
 

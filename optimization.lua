@@ -221,7 +221,6 @@ print("_________________ constraint")
 
 ITER = not nil
 TRACE = nil
-BEST = not nil
 
 argmin_constraint (X, M)
 

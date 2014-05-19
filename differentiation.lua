@@ -163,7 +163,6 @@ print("_________________ constraint")
 ITER = not nil
 MUTE = nil
 TRACE = nil
-BEST = not nil
 
 FNARGMIN (X, M)
 

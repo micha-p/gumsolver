@@ -37,15 +37,23 @@ PRINTV  = function (r) return (not r and ".")
           end
 PRINTE  = function (r) return (RELATIVE and r.d2 and best(100 * math.sqrt(r.d2),2) .. "%") 
                               or 
-                              r.D2 and best(math.sqrt(r.D2),3) 
+                              r.D2 and best(math.sqrt(r.D2),3)
           end
 PRINTX  = function (r) return (not r and ".")
                               or
                               numbertest(r) and string.format("%-15G",r) 
                               or
-                              ERRORS and r.d2 and (PRINTV(r) ..  " ± " .. PRINTE(r))
+                              SHORT and PRINTV(r)
                               or
-                              PRINTV(r)
+                              r.d2 and (PRINTV(r) ..  " ± " .. PRINTE(r))
+                              or
+                              r.D2 and (PRINTV(r) ..  " ± " .. PRINTE(r))
+                              or
+                              (not r.D2) and ZERO and (PRINTV(r) ..  " ± 0")
+                              or 
+                              (not r.v and ".")
+                              or
+                              r.v
                               end 
 
 --[[
