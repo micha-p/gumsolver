@@ -138,70 +138,60 @@ function getchar()
 return char
 end
 
-function process_eventloop()
-   local char = ""
-   do_itertable()
-   while char do 
-      char = handlechar(getchar())
-      jumptoline(CURRENTLINE)
-   end
-   jump_below()
-end
-
-function handleinput()
+function handleinputline(first)
       jump_below()
       io.write("\27[K\27[J") -- clear to end of screen
-      io.write(PROMPT or "> ")
+      io.write("> ")
+      if first then io.write(first) end
       local i = io.read()
       if i then 
-         process_input (i)
+         return process_inputline (first and first..i or i)
       else
          return nil
       end
-      jumptoend()
 end
 
 function handleinteraction(line, char,name,connector,x)
-   if char=="\126" or char=="\127"  or char=="\b" then  			-- delete
+   if char=="\126" or char=="\127"  or char=="\b" or char==" " then		-- delete
       UNDONAME=name
       UNDOVALUE=get_scaled_val_from_connector(connector)
-      process_input(name)
-   elseif char=="\t" or char=="\n" then						-- input
+      process_inputline(name)
+   elseif char=="\t" or char=="\10" or char=="\13" then				-- input
       io.write("\27[".. line ..";"..VALUECOLUMN.."H")
       io.write("\27[K")
 --      io.write("")
       local i = io.read()
       if i and i~="" then 
-         process_input(name)
-         process_input(name.."=".. i) 
+         process_inputline(name)
+         process_inputline(name.."=".. i) 
       end
    elseif char=="-" then    							-- ~80% ~80% ~80% = 50%
-      process_line(name)
+      process_inputline(name)
       if x then 
-      	 process_line(name.."="..PRINTX(vamp(x, math.pow (1/2, 1/3))))
+      	 process_inputline(name.."="..PRINTX(vamp(x, math.pow (1/2, 1/3))))
       else
-         process_line(name.."=1")
+         process_inputline(name.."=1")
       end   
    elseif char=="/" then    							-- ~8% ~8% ~8% = 95%
-      process_line(name)
+      process_inputline(name)
       if x then 
-      	 process_line(name.."="..PRINTX(vamp(x, math.pow (0.95, 1/3))))
+      	 process_inputline(name.."="..PRINTX(vamp(x, math.pow (0.95, 1/3))))
       else
-         process_line(name.."=1")
+         process_inputline(name.."=1")
       end   
    elseif char=="+" then    							-- ~125% ~125% ~125% = 200%
-      process_line(name)
+      process_inputline(name)
       if x then 
-	 process_line(name.."="..PRINTX(vamp(x, math.pow (2, 1/3))))
+	 process_inputline(name.."="..PRINTX(vamp(x, math.pow (2, 1/3))))
       else
-         process_line(name.."=1")
+         process_inputline(name.."=1")
       end   
    elseif char=="*" then    							-- ~102.5% ~102.5% ~102.5% = 105%
-      process_line(name)
+      process_inputline(name)
       if x then 
-	 process_line(name.."="..PRINTX(vamp(x, math.pow (1.05, 1/3))))
+	 process_inputline(name.."="..PRINTX(vamp(x, math.pow (1.05, 1/3))))
       else
-         process_line(name.."=1")
+         process_inputline(name.."=1")
       end   
    elseif char=="\07" then    							-- go
       do_itertable()
@@ -209,16 +199,16 @@ function handleinteraction(line, char,name,connector,x)
       CLIPBOARD = x
    elseif char=="\24" then    							-- cut
       CLIPBOARD = x
-      process_input(name)
+      process_inputline(name)
    elseif char=="\22" then    							-- paste
-      process_line(name)
-      process_line(name.."=".. PRINTX(CLIPBOARD))
+      process_inputline(name)
+      process_inputline(name.."=".. PRINTX(CLIPBOARD))
    elseif char=="\26" then    							-- undo
-      if UNDONAME then process_line(UNDONAME.."=".. PRINTX(UNDOVALUE)) end
+      if UNDONAME then process_inputline(UNDONAME.."=".. PRINTX(UNDOVALUE)) end
    elseif char=="\18" then    							-- refresh
       printfullmask()
    else
-      io.write ("\a")
+      handleinputline(char)
    end   
    do_itertable()
 end
@@ -242,8 +232,8 @@ function handlechar(char)
       end
    elseif char=="\04" or char=="\17" then
       return nil
-   elseif char=="\13" or char=="\10" then
-      handleinput()
+   elseif char=="#" then
+      return handleinputline(char)
    else
       local line = CURRENTLINE
       local name = MASKARRAY[CURRENTLINE]
@@ -259,5 +249,14 @@ function handlechar(char)
 end   
 
 
+function process_eventloop()
+   local char = ""
+   do_itertable()
+   while char do 
+      char = handlechar(getchar())
+      jumptoline(CURRENTLINE)
+   end
+   jump_below()
+end
 
 

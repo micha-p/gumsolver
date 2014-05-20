@@ -22,9 +22,9 @@ Networks of constraints and linked connectors are specified as arithmetic terms 
 
 ./gumsolver -i demo/example.txt  
 ./gumsolver -q -t -i demo/tableformula.txt  
-./gumsolver -d, -t -i demo/tableformula.csv  
+./gumsolver -a -d, -t -i demo/tableformula.csv  
 cat demo/example.txt | ./gumsolver -b   
-cat demo/tableformula.csv | ./gumsolver -b -TABLE   
+cat demo/tableformula.csv | ./gumsolver -b -t 
 rlwrap ./gumsolver
 
 ## Elementary commands for interactions and pipelined files

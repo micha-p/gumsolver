@@ -11,8 +11,8 @@ function csv_read(separator,filehandle)
       local fields={}
       if not line:find("^# ") then			-- skip comments
          for i,field in ipairs(csv_process_line(line, sep)) do
-       	    if i > #header then
-      	       error ("To many input fields, check line endings!")
+       	    if #rtable > 1 and i > table.getn(rtable[1]) then
+      	       error ("Too many input fields: "..i.." Check line endings!: "..line)
       	    else
                table.insert(fields, field)
             end

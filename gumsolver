@@ -112,15 +112,15 @@ function process_file(f)
    end
    io.close(filehandle)
    io.input(temp)   
-return not nil
+return DUMP
 end
 
 
 
 function process_flags(a)
-   BATCH    = BATCH    or a:find("^BA?T?C?H?")
-   MASK     = MASK     or a:find("^MA?S?K?")
-   TABLE    = TABLE    or a:find("^TAB?L?E?")
+   BATCH    = string.find(GLOBALS,"b") or BATCH    or a:find("^BA?T?C?H?")
+   MASK     = string.find(GLOBALS,"m") or MASK     or a:find("^MA?S?K?")
+   TABLE    = string.find(GLOBALS,"t") or TABLE    or a:find("^TAB?L?E?")
    RECORD   = MASK and TABLE
 
    DEBUG    = DEBUG    and not a:find("^SU?P?P?R?E?S?S?") or a:find("^DEB?U?G?")  and not DEBUG
@@ -132,9 +132,9 @@ function process_flags(a)
    MUTE     = MUTE     or a:find("^TA?B?L?E?") and not MUTE
    MUTE     = MUTE     or a:find("^t")     and not MUTE
    MUTE     = MUTE     or a:find("^MUTE")  and not MUTE
-   MUTE     = MUTE     or a:find("^q")     and not MUTE
-   BEST     = BEST     or a:find("^BE?S?T?")
-   BEST     = BEST     and not a:find("^FU?L?L?")
+   MUTE     = MASK or MUTE or a:find("^q") and not MUTE
+   BEST     = string.find(GLOBALS,"b") or BEST     or a:find("^BE?S?T?")
+   BEST     = (not string.find(GLOBALS,"f")) or BEST  and not a:find("^FU?L?L?")
    RELATIVE = RELATIVE or a:find("^RE?L?A?T?I?V?E?") or a:find("^r") or a:find("^a") and nil
    return not (DUMP or a:find("^QU?I?T?")) 
 end
@@ -149,7 +149,8 @@ while continue and arg and arg[1] do
       table.remove(arg,1)
       if DEBUG then print2("INCLUDE ",arg[1]) end
       if MASK then io.write ("\27[H\27[J") end   -- clear screen
-      continue=process_file(arg[1])
+      process_file(arg[1])
+      continue=DUMP
    else
       continue = process_flags(a)
    end
@@ -158,7 +159,7 @@ end
 
 if MASK then
    process_eventloop("\13") 					--< from stdin
-elseif TABLE then
+elseif TABLE and not string.find(GLOBALS,"i") then
    process_table(DELIMITER)   					--< from stdin
 elseif not string.find(GLOBALS,"i") then
    while true do
